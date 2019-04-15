@@ -33,4 +33,4 @@ if __name__ == "__main__":
             print(f"Failed to load extension {extension}", file=sys.stderr)
             traceback.print_exc()
 
-bot.run(settings["discord"]["oakbotToken"])
+bot.run(settings['discord']['oakbotToken'])

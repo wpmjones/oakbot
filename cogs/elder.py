@@ -313,7 +313,7 @@ def isDiscordUser(guild, discordId):
         return False, None
 
 def splitString(string, prepend="", append=""):
-   messageLimit = 2000
+    messageLimit = 2000
     if len(string) <= 2000:
         return string, ""
     else:

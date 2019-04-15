@@ -54,7 +54,7 @@ class General:
         troopLevels += "    " + emojis['troops']['wiz'] + str(row['wizard']) if row['wizard'] > 0 else ""
         troopLevels += "    " + emojis['troops']['healer'] + str(row['healer']) if row['healer'] > 0 else ""
         troopLevels += "    " + emojis['troops']['drag'] + str(row['dragon']) if row['dragon'] > 0 else ""
-        troopLevels += "\n"" + emojis['troops']['pekka'] + str(row['pekka']) if row['pekka'] > 0 else ""
+        troopLevels += "\n" + emojis['troops']['pekka'] + str(row['pekka']) if row['pekka'] > 0 else ""
         troopLevels += "    " + emojis['troops']['babydrag'] + str(row['babyDrag']) if row['babyDrag'] > 0 else ""
         troopLevels += "    " + emojis['troops']['miner'] + str(row['miner']) if row['miner'] > 0 else ""
         troopLevels += "    " + emojis['troops']['edrag'] + str(row['edrag']) if row['edrag'] > 0 else ""
@@ -114,7 +114,7 @@ class General:
         embed.add_field(name = "Best Versus Trophies", value = str(row['bestVsTrophies']), inline = True)
         embed.add_field(name = "Troop Levels", value = builderLevels, inline = False)
         embed.add_field(name = "Hero Levels", value = builderHero, inline = False)
-        embed.set_footer(icon_url = "http://www.mayodev.com/images/coc/oakbadge.png", text = f"Member of Reddit Oak since {row['joinDate'].strftime("%e %B, %Y")}")
+        embed.set_footer(icon_url = "http://www.mayodev.com/images/coc/oakbadge.png", text = f"Member of Reddit Oak since {row['joinDate'].strftime('%e %B, %Y')}")
         print(bot_log(ctx.command,playerName,ctx.author,ctx.channel))
         await ctx.send(embed=embed)
 
@@ -202,7 +202,7 @@ class General:
         donors = []
         for row in fetched:
             donors.append(f"{row['playerName'].rstrip()}: <@{row['slackId']}>")
-        embed = discord.Embed(title = f"{siegeName} Request", description = f"{requestor} has requested a {siegeName}"", color=0xb5000)
+        embed = discord.Embed(title = f"{siegeName} Request", description = f"{requestor} has requested a {siegeName}", color=0xb5000)
         # embed.add_field(name = "Potential donors include:", value = "\n".join(donors))
         embed.set_footer(icon_url = thumb, text = "Remember to select your seige machine when you attack!")
         content = "**Potential donors include:**\n"
