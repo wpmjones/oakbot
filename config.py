@@ -13,7 +13,7 @@ def color_pick(r, g, b):
 
 
 def bot_log(command, request, author, channel, err_flag=0):
-    msg = str(datetime.now() - timedelta(hours=6))[:16] + " - "
+    msg = f"{str(datetime.now() - timedelta(hours=6))[:16]} - "
     if err_flag == 0:
         msg += f"Printing {command} for {request}. Requested by {author} in {channel}."
     else:
