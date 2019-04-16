@@ -51,6 +51,12 @@ class OwnerCog:
             print(f"{cog} reloaded successfully")
             await ctx.send("**`SUCCESS`**")
 
+    @commands.command(name="pull", hidden=True)
+    @commands.is_owner()
+    async def git_pull(self):
+        origin = self.bot.repo.remotes.origin
+        origin.pull()
+
 
 def setup(bot):
     bot.add_cog(OwnerCog(bot))

@@ -1,5 +1,7 @@
 import sys
 import traceback
+import git
+import os
 from discord.ext import commands
 from config import settings
 import logging
@@ -14,7 +16,7 @@ All commands must begin with a slash"""
 
 bot = commands.Bot(command_prefix="/", description=description, case_insensitive=True)
 bot.remove_command("help")
-
+bot.repo = git.Repo(os.getcwd())
 
 @bot.event
 async def on_ready():
