@@ -54,7 +54,7 @@ class OwnerCog:
     @commands.command(name="pull", hidden=True)
     @commands.is_owner()
     async def git_pull(self, ctx):
-        """Command to pull latest updates from GitHub"""
+        """Command to pull latest updates from master branch on GitHub"""
         origin = self.bot.repo.remotes.origin
         origin.pull()
 
