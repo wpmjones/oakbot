@@ -56,7 +56,12 @@ class OwnerCog:
     async def git_pull(self, ctx):
         """Command to pull latest updates from master branch on GitHub"""
         origin = self.bot.repo.remotes.origin
-        origin.pull()
+        try:
+            origin.pull()
+            print("Code successfully pulled from GitHub")
+        except Exception as e:
+            print(f"ERROR: {type(e).__name__} - {e}")
+            await ctx.send(f"**`ERROR:`** {type(e).__name__} - {e}")
 
 
 def setup(bot):
