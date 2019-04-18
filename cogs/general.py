@@ -12,7 +12,7 @@ class General:
 
     async def on_message(self, message):
         """Auto-responder"""
-        if message.author == self.bot.user or message.author.name == "The Arborist" or message.author.name == "Oak WarBot":
+        if message.author.name == "The Arborist" or message.author.name == "Oak WarBot":
             return
         if "funnel" in message.content:
             await message.channel.send("Learn how to funnel here - https://youtu.be/0rWN9FLMGT4 - or your leader will be very mad!")
@@ -25,15 +25,18 @@ class General:
             return
 
     @commands.command(name="player")
-    async def player(self, ctx, *, playerName: str = "x"):
+    async def player(self, ctx, *, player_name: str = "x"):
         """Provide details on the specified player"""
-        if playerName == "x":
+        if player_name == "x":
             print(bot_log(ctx.command,"no player name",ctx.author,ctx.channel))
             await ctx.send(f"{emojis['other']['redx']} You must provide an in-game name for this command. Try /player TubaKid")
             return
-        conn = pymssql.connect(settings['database']['server'], settings['database']['username'], settings['database']['password'], settings['database']['database'])
+        conn = pymssql.connect(settings['database']['server'],
+                               settings['database']['username'],
+                               settings['database']['password'],
+                               settings['database']['database'])
         cursor = conn.cursor(as_dict=True)
-        cursor.execute(f"SELECT * FROM coc_oak_playerStats WHERE playerName = '{playerName}'")
+        cursor.execute(f"SELECT * FROM coc_oak_playerStats WHERE playerName = '{player_name}'")
         try:
             row = cursor.fetchone()
             if row is None:
@@ -42,7 +45,7 @@ class General:
                 return
         except:
             print(bot_log(ctx.command,f"other error - {arg}",ctx.author,ctx.channel))
-            await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. <@251150854571163648> I was trying to look up a player ({playerName}) but the world conspired against me.")
+            await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. <@251150854571163648> I was trying to look up a player ({player_name}) but the world conspired against me.")
             return
 
         troopLevels = emojis['troops']['barb'] + str(row['barb'])
@@ -115,7 +118,7 @@ class General:
         embed.add_field(name = "Troop Levels", value = builderLevels, inline = False)
         embed.add_field(name = "Hero Levels", value = builderHero, inline = False)
         embed.set_footer(icon_url = "http://www.mayodev.com/images/coc/oakbadge.png", text = f"Member of Reddit Oak since {row['joinDate'].strftime('%e %B, %Y')}")
-        print(bot_log(ctx.command,playerName,ctx.author,ctx.channel))
+        print(bot_log(ctx.command,player_name,ctx.author,ctx.channel))
         await ctx.send(embed=embed)
 
     @commands.command(name="help", hidden=True)
