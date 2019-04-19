@@ -121,6 +121,27 @@ class General:
         print(bot_log(ctx.command,player_name,ctx.author,ctx.channel))
         await ctx.send(embed=embed)
 
+    @commands.command(name="avatar", hidden=True)
+    async def avatar(self, ctx, member):
+        # convert discord mention to user id only
+        if member.startswith("<"):
+            discord_id = "".join(member[2:-1])
+            if discord_id.startswith("!"):
+                discord_id = discord_id[1:]
+        else:
+            await ctx.send(emojis['other']['redx'] + " I don't believe that's a real Discord user. Please make sure you are using the '@' prefix.")
+            return
+        guild = ctx.bot.get_guild(settings['discord']['oakGuildId'])
+        is_user, user = is_discord_user(guild, int(discord_id))
+        if not is_user:
+            await ctx.send(f"{emojis['other']['redx']} User provided **{member}** is not a member of this discord server.")
+            return
+        embed = discord.Embed(color=discord.Color.blue())
+        embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
+        embed.set_image(url=user.avatar_url_as(size=128))
+        await ctx.send(embed=embed)
+        bot_log(ctx.command, ctx.author)
+
     @commands.command(name="help", hidden=True)
     async def help(self, ctx, command: str = "all"):
         """ Welcome to tThe Arborist"""
@@ -213,6 +234,17 @@ class General:
         print(bot_log(ctx.command,siegeType,ctx.author,ctx.channel))
         await ctx.send(embed=embed)
         await ctx.send(content)
+
+
+def is_discord_user(guild, discord_id):
+    try:
+        user = guild.get_member(discord_id)
+        if user is None:
+            return False, None
+        else:
+            return True, user
+    except:
+        return False, None
 
 def splitString(string, prepend="", append=""):
     messageLimit = 2000
