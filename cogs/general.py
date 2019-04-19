@@ -140,7 +140,7 @@ class General:
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
         embed.set_image(url=user.avatar_url_as(size=128))
         await ctx.send(embed=embed)
-        bot_log(ctx.command, ctx.author)
+        print(bot_log(ctx.command, member, ctx.author, ctx.channel))
 
     @commands.command(name="help", hidden=True)
     async def help(self, ctx, command: str = "all"):
