@@ -5,7 +5,7 @@ from datetime import datetime
 from config import settings, emojis, color_pick, bot_log
 
 
-class General:
+class General(commands.Cog):
     """Default Arborist commands"""
     def __init__(self, bot):
         self.bot = bot

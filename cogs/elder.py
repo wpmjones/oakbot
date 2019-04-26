@@ -8,7 +8,8 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
-class Elder:
+
+class Elder(commands.Cog):
     """Elder only Arborist commands"""
     def __init__(self, bot):
         self.bot = bot
@@ -17,10 +18,13 @@ class Elder:
     async def elder(self, ctx, command: str = "help"):
         """Help menu for elder staff"""
         if authorized(ctx.author.roles):
-            embed = discord.Embed(title = "Reddit Oak Elder Help Menu", description = "All the elder commands you need but can't remember how to use!", color = color_pick(66,134,244))
-            embed.add_field(name = "Commands:", value = "-----------", inline = True)
+            embed = discord.Embed(title = "Reddit Oak Elder Help Menu",
+                                  description = "All the elder commands you need but can't remember how to use!",
+                                  color = color_pick(66, 134, 244))
+            embed.add_field(name="Commands:", value="-----------", inline=True)
             if command in ["help","role"]:
-                role = "Adds the specified role to the specified user if they do not have it. Removes the role if they already have it."
+                role = ("Adds the specified role to the specified user if they do not have it. "
+                       "Removes the role if they already have it.")
                 embed.add_field(name = "/role <@discord mention> <discord role>", value = role, inline = False)
             if command in ["help","warn"]:
                 warnList = "Lists all strikes for all users. Sorted by user (alphabetically)."
