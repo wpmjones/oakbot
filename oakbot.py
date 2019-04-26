@@ -2,12 +2,12 @@ import sys
 import traceback
 import git
 import os
+from loguru import logger
 from discord.ext import commands
 from config import settings
-import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger.add("oakbot.log", rotation="100MB",
+           format="{time:YYYY-MM-DD HH:mm:ss} {level} {message}", level="INFO")
 logger.info("Starting bot")
 
 description = """Welcome to The Arborist - by TubaKid
@@ -18,11 +18,12 @@ bot = commands.Bot(command_prefix="/", description=description, case_insensitive
 bot.remove_command("help")
 bot.repo = git.Repo(os.getcwd())
 
+
 @bot.event
 async def on_ready():
-    print("-------")
-    print(f"Logged in as {bot.user}")
-    print("-------")
+    logger.info("-------")
+    logger.info(f"Logged in as {bot.user}")
+    logger.info("-------")
 
 
 initialExtensions = ["cogs.general", "cogs.members", "cogs.elder", "cogs.owner"]
@@ -31,8 +32,9 @@ if __name__ == "__main__":
     for extension in initialExtensions:
         try:
             bot.load_extension(extension)
+            logger.debug(f"{extension} loaded successfully")
         except Exception as e:
-            print(f"Failed to load extension {extension}", file=sys.stderr)
+            logger.info(f"Failed to load extension {extension}")
             traceback.print_exc()
 
 bot.run(settings['discord']['oakbotToken'])
