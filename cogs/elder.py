@@ -1,6 +1,7 @@
 import discord
 import pymssql
 import requests
+from loguru import logger
 from discord.ext import commands
 from datetime import datetime, timedelta
 from config import settings, color_pick, bot_log, emojis
