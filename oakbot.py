@@ -24,6 +24,8 @@ async def on_ready():
     logger.info("-------")
     logger.info(f"Logged in as {bot.user}")
     logger.info("-------")
+    channel = bot.get_channel(settings['oakChannels']['testChat'])
+    await channel.send("The Arborist is now planting trees")
 
 
 initialExtensions = ["cogs.general", "cogs.members", "cogs.elder", "cogs.owner"]
