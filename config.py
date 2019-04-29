@@ -32,7 +32,7 @@ def logger(ctx,
         log_type_num = 20
     if log_type_num >= log_level:
         date_fmt = "%Y-%m-%d %H:%M:%S"
-        msg = f"{(datetime.now() - timedelta(hours=6)).strftime(date_fmt)} | {log_type} | "
+        msg = f"\n{(datetime.now() - timedelta(hours=6)).strftime(date_fmt)} | {log_type} | "
         msg += f"{ctx.command} invoked by {ctx.author}"
         msg += f"\n- Channel: {ctx.channel}"
         if len(args_dict) != 0:
