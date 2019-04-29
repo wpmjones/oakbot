@@ -19,7 +19,7 @@ def logger(ctx,
            args_dict: typing.Dict[str, str] = {},
            message: str = ""):
     """Custom logging for bot"""
-    log_level = 20
+    log_level = 10
     log_types = {"CRITICAL": 50,
                  "ERROR": 40,
                  "WARNING": 30,
@@ -30,6 +30,7 @@ def logger(ctx,
         log_type = log_types[log_type]
     else:
         log_type = 20
+    print(f"log type = {log_type}")
     if log_type >= log_level:
         date_fmt = "%Y-%m-%d %H:%M:%S"
         msg = f"{(datetime.now() - timedelta(hours=6)).strftime(date_fmt)} | {log_type} | "
@@ -42,6 +43,7 @@ def logger(ctx,
             msg += args
         if message != "":
             msg += f"\nMessage: {message}"
+        print(msg)
         with open(f"{cog}.log", "a") as file:
             file.write(msg)
 
