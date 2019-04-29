@@ -15,7 +15,7 @@ def color_pick(r, g, b):
 def logger(ctx,
            log_type: str = "INFO",
            cog: str = "main",
-           args_dict: Dict[str, str] = {},
+           args_dict: dict[str, str] = {},
            message: str = ""):
     """Custom logging for bot"""
     log_level = 20
