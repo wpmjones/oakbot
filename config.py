@@ -16,7 +16,7 @@ def logger(ctx,
            log_type: str = "INFO",
            cog: str = "main",
            args_dict: dict[str, str] = {},
-           message: str = ""):
+           log_message: str = ""):
     """Custom logging for bot"""
     log_level = 20
     log_types = {"CRITICAL": 50,
@@ -39,8 +39,8 @@ def logger(ctx,
             for key, value in args_dict.items():
                 args += f"\n  - {key}: {value}"
             msg += args
-        if message != "":
-            msg += f"\nMessage: {message}"
+        if log_message != "":
+            msg += f"\nMessage: {log_message}"
         with open(f"{cog}.log", "a") as file:
             file.write(msg)
 
