@@ -7,10 +7,11 @@ class MembersCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         """Event listener which is called when a user joins the server."""
         channel = member.guild.get_channel(251463913437134848)
-        content = (f"Welcome to Reddit Oak's Discord Server {member.display_name}! We're happy to have you! Please "
+        content = (f"Welcome to Reddit Oak's Discord Server {member.mention}! We're happy to have you! Please "
                    "change your Discord nickname to match your in game name so that we know who you are.  If you have "
                    "recently joined Reddit Oak, you must read our rules at https://www.reddit.com/r/coc_redditoak.  "
                    "There is a form at the end that you will need to complete before we can give you more roles on "
@@ -22,6 +23,7 @@ class MembersCog(commands.Cog):
                    "https://discord.me/redditclansystem\n\nHave fun!")
         await channel.send(content)
 
+    @commands.Cog.listener()
     async def on_member_remove(self, member):
         """Event listener which is called when a user leaves the server."""
         # Build random list of messages
