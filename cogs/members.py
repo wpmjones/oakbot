@@ -1,7 +1,7 @@
 import discord
 import random
 from discord.ext import commands
-from config import settings, bot_log
+from config import logger
 
 
 class MembersCog(commands.Cog):
@@ -21,16 +21,18 @@ class MembersCog(commands.Cog):
                    "for all your NSFW needs.  (Don't let it go too far.)\n\nIf you haven't already, we highly "
                    "recommend that you also join the Reddit Clan System Discord server!  "
                    "https://discord.me/redditclansystem\n\nHave fun!")
-        print(bot_log("on_member_join", member.display_name, "Event Listener", "General"))
+        logger(None, "INFO", "members", {"Activity": "on_member_join", "Member": member})
         await channel.send(content)
 
     async def on_member_remove(self, member):
         """Event listener which is called when a user leaves the server."""
         # Build random list of messages
-        msgOptions = [" just left the server.  Buh Bye!", " just left our Discord. I wonder if we will miss them.", " just left. What's up with that?"]
+        msg_options = [" just left the server.  Buh Bye!", 
+                       " just left our Discord. I wonder if we will miss them.",
+                       " just left. What's up with that?"]
         channel = member.guild.get_channel(251463913437134848)
-        content = member.display_name + random.choice(msgOptions)
-        print(bot_log("on_member_remove", member.display_name, "Event Listener", "General"))
+        content = member.display_name + random.choice(msg_options)
+        # print(bot_log("on_member_remove", member.display_name, "Event Listener", "General"))
         await channel.send(content)
 
     @commands.command()
@@ -41,7 +43,7 @@ class MembersCog(commands.Cog):
 
     @commands.command(name="perms", aliases=["perms_for", "permissions"])
     @commands.guild_only()
-    async def check_permissions(self, ctx, *, member: discord.Member=None):
+    async def check_permissions(self, ctx, *, member: discord.Member = None):
         """A simple command which checks a members Guild Permissions.
         If member is not provided, the author will be checked."""
 
@@ -59,6 +61,7 @@ class MembersCog(commands.Cog):
         embed.add_field(name="\uFEFF", value=perms)
 
         await ctx.send(content=None, embed=embed)
+
 
 def setup(bot):
     bot.add_cog(MembersCog(bot))

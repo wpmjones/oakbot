@@ -15,6 +15,8 @@ class Elder(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    # TODO Add command for get DM history with @user arg
+
     @commands.command(name="elder", hidden=True)
     async def elder(self, ctx, command: str = "help"):
         """Help menu for elder staff"""
