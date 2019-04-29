@@ -27,11 +27,10 @@ def logger(ctx,
                  "DEBUG": 10,
                  "NOTSET": 0}
     if log_type in log_types:
-        log_type = log_types[log_type]
+        log_type_num = log_types[log_type]
     else:
-        log_type = 20
-    print(f"log type = {log_type}")
-    if log_type >= log_level:
+        log_type_num = 20
+    if log_type_num >= log_level:
         date_fmt = "%Y-%m-%d %H:%M:%S"
         msg = f"{(datetime.now() - timedelta(hours=6)).strftime(date_fmt)} | {log_type} | "
         msg += f"{ctx.command} invoked by {ctx.author}"
@@ -43,7 +42,6 @@ def logger(ctx,
             msg += args
         if message != "":
             msg += f"\nMessage: {message}"
-        print(msg)
         with open(f"{cog}.log", "a") as file:
             file.write(msg)
 
