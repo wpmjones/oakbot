@@ -62,7 +62,7 @@ class Elder(commands.Cog):
                 presence = "Change the bot presence (message under bot name) to the default OR the specified message."
                 embed.add_field(name="/presence <default or message>", value=presence, inline=False)
             await ctx.send(embed=embed)
-            logger(ctx, "INFO", "elder", command)
+            logger(ctx, "INFO", "elder", {"Request": command})
         else:
             logger(ctx, "WARNING", "elder", {"Request": command}, "User not authorized")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
