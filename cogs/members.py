@@ -1,7 +1,6 @@
 import discord
 import random
 from discord.ext import commands
-from config import logger
 
 
 class MembersCog(commands.Cog):
@@ -21,7 +20,6 @@ class MembersCog(commands.Cog):
                    "for all your NSFW needs.  (Don't let it go too far.)\n\nIf you haven't already, we highly "
                    "recommend that you also join the Reddit Clan System Discord server!  "
                    "https://discord.me/redditclansystem\n\nHave fun!")
-        logger(None, "INFO", "members", {"Activity": "on_member_join", "Member": member})
         await channel.send(content)
 
     async def on_member_remove(self, member):
@@ -32,7 +30,6 @@ class MembersCog(commands.Cog):
                        " just left. What's up with that?"]
         channel = member.guild.get_channel(251463913437134848)
         content = member.display_name + random.choice(msg_options)
-        # print(bot_log("on_member_remove", member.display_name, "Event Listener", "General"))
         await channel.send(content)
 
     @commands.command()
