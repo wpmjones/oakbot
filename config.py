@@ -42,6 +42,6 @@ def logger(ctx,
             msg += args
         if message != "":
             msg += f"\nMessage: {message}"
-        with open(f"{cog}.log", "a") as file:
-            file.write(msg)
+        with open(f"{cog}.log", "a") as f:
+            f.write(msg)
 
