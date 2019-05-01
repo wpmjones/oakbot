@@ -1,4 +1,3 @@
-import sys
 import traceback
 import git
 import os
