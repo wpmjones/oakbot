@@ -3,6 +3,7 @@ import pymssql
 import requests
 import asyncio
 import asyncpg
+import coc
 from discord.ext import commands
 from datetime import datetime, timedelta
 from config import settings, color_pick, logger, emojis
@@ -15,6 +16,7 @@ class Elder(commands.Cog):
     """Elder only Arborist commands"""
     def __init__(self, bot):
         self.bot = bot
+        self.test_channel = self.bot.get_channel(settings['oakChannels']['testChat'])
 
     # TODO Add command for get DM history with @user arg
 
@@ -74,8 +76,61 @@ class Elder(commands.Cog):
             is_user, user = is_discord_user(ctx.guild, int(discord_id))
             if is_user:
                 if in_game_name.startswith("#"):
-                    # working with player tag
-                    pass
+                    # this is a player tag
+                    tag = in_game_name
+                else:
+                    # get player tag
+                    coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
+                    members = await coc_client.get_members("#CVCJR89")
+                    await coc_client.close()
+                    match = 0
+                    for member in members:
+                        if in_game_name == member.name:
+                            tag = member.tag
+                            match = 1
+                    if match == 0:
+                        await self.test_channel.send(f"I could not find {in_game_name} in the clan. Please check the "
+                                                     f"name or try using the player tag (starting with #).")
+                        return
+                try:
+                    # ideally the following code should go in a module if I can ever figure how
+                    conn = await asyncpg.connect(user=settings['pg']['user'],
+                                                 password=settings['pg']['pass'],
+                                                 host=settings['pg']['host'],
+                                                 database=settings['pg']['db'])
+                    sql = f"SELECT discord_id FROM rcs_discord_links WHERE tag = '{tag}'"
+                    row = await conn.fetchrow(sql)
+                    if row:
+                        if row('discord_id') == discord_id:
+                            # player record is already in db
+                            await self.test_channel.send(f"{in_game_name} is already in the database.")
+                            pass
+                        # row exists but has a different discord_id
+                        sql = (f"UPDATE rcs_discord_links"
+                               f"SET discord_id = {discord_id}"
+                               f"WHERE player_tag = '{tag}'")
+                        await conn.execute(sql)
+                        return
+                    # no player record in db
+                    sql = (f"INSERT INTO rcs_discord_links"
+                           f"VALUES ({discord_id}, '{tag}'")
+                    await conn.execute(sql)
+                    await self.test_channel.send(f"{in_game_name} added to the database")
+                    conn.close()
+                except Exception as e:
+                    header = f"Error in database process"
+                    embed = {
+                        "embeds": [{
+                            "color": color_pick(220, 0, 0),
+                            "title": header,
+                            "fields": [
+                                {"name": "Error Message", "value": e}
+                            ]
+                        }]
+                    }
+                    await self.test_channel.send(embed=embed)
+            else:
+                await self.test_channel.send(f"{discord_id} is a bad id or user is not yet on the server.")
 
     @commands.command(name="giphy", hidden=True)
     async def giphy(self, ctx, gif_text):
