@@ -70,10 +70,10 @@ class Elder(commands.Cog):
             logger(ctx, "WARNING", "elder", {"Request": command}, "User not authorized")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
-    # @commands.command(name="war", aliases=["xar"], hidden=True)
-    # async def war(self, ctx, add, in_game_name, discord_id):
-    #     if add == "add":
-    #         is_user, user = is_discord_user(ctx.guild, int(discord_id))
+    @commands.command(name="war", aliases=["xar"], hidden=True)
+    async def war(self, ctx, add, in_game_name, discord_id):
+        if add == "add":
+            is_user, user = is_discord_user(ctx.guild, int(discord_id))
     #         if is_user:
     #             if in_game_name.startswith("#"):
     #                 # this is a player tag
