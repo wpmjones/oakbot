@@ -192,9 +192,9 @@ class General(commands.Cog):
         logger(ctx, "INFO", "general", {"Command": command})
         await ctx.send(embed=embed)
 
-    @commands.command(name="war", hidden=True)
-    async def war_handler(self):
-        pass
+    # @commands.command(name="war", hidden=True)
+    # async def war_handler(self):
+    #     pass
 
     @commands.command(name="siege", aliases=["sm"])
     async def siege_request(self, ctx, *, siege_type: str = "help"):

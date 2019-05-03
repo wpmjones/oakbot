@@ -1,9 +1,11 @@
 import traceback
 import git
 import os
+import asyncio
 from loguru import logger
 from discord.ext import commands
 from config import settings
+from oakdb import OakDB
 
 logger.add("oakbot.log", rotation="100MB",
            format="{time:YYYY-MM-DD HH:mm:ss} {level} {message}", level="INFO")
@@ -38,4 +40,8 @@ if __name__ == "__main__":
             logger.info(f"Failed to load extension {extension}")
             traceback.print_exc()
 
+# loop = asyncio.get_event_loop()
+# pool = loop.run_until_complete(OakDB(bot).create_pool())
+# bot.pool = pool
 bot.run(settings['discord']['oakbotToken'])
+
