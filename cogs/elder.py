@@ -2,7 +2,6 @@ import discord
 import pymssql
 import requests
 import asyncio
-import coc
 from discord.ext import commands
 from datetime import datetime, timedelta
 from config import settings, color_pick, logger, emojis
@@ -16,7 +15,6 @@ class Elder(commands.Cog):
     """Elder only Arborist commands"""
     def __init__(self, bot):
         self.bot = bot
-        self.test_channel = self.bot.get_channel(settings['oakChannels']['testChat'])
 
     # TODO Add command for get DM history with @user arg
 
@@ -69,22 +67,6 @@ class Elder(commands.Cog):
         else:
             logger(ctx, "WARNING", "elder", {"Request": command}, "User not authorized")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
-
-    @commands.command()
-    async def asdf(self, ctx, tag):
-        coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
-        clan = await coc_client.get_clan(f"#{tag}")
-        e = discord.Embed(colour=discord.Colour.green())
-        e.set_thumbnail(url=clan.badge.url)
-        e.add_field(name=clan.name,
-                    value=clan.tag)
-        e.add_field(name="Description",
-                    value=clan.description)
-        e.add_field(name="Members",
-                    value=clan.members)
-        e.add_field(name="Clan Record",
-                    value="{}-{}-{}".format(clan.war_wins, clan.war_losses, clan.war_ties))
-        await ctx.send(embed=e)
 
     @commands.command(name="giphy", hidden=True)
     async def giphy(self, ctx, gif_text):

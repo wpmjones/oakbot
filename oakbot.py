@@ -1,6 +1,7 @@
 import traceback
 import git
 import os
+import coc
 import asyncio
 from loguru import logger
 from discord.ext import commands
@@ -43,5 +44,7 @@ if __name__ == "__main__":
 # loop = asyncio.get_event_loop()
 # pool = loop.run_until_complete(OakDB(bot).create_pool())
 # bot.pool = pool
+bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
+bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
 bot.run(settings['discord']['oakbotToken'])
 
