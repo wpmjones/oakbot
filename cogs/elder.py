@@ -75,7 +75,7 @@ class Elder(commands.Cog):
         coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
         clan = await coc_client.get_clan(f"#{tag}")
         e = discord.Embed(colour=discord.Colour.green())
-        e.set_thumbnail(url=clan.badgeUrls.medium)
+        e.set_thumbnail(url=clan.badge.url)
         e.add_field(name=clan.name,
                     value=clan.tag)
         e.add_field(name="Description",
