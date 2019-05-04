@@ -46,4 +46,4 @@ loop = asyncio.get_event_loop()
 pool = loop.run_until_complete(bot.db.create_pool())
 bot.db.pool = pool
 bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
-bot.run(settings['discord']['testToken'])
+bot.run(settings['discord']['oakbotToken'])
