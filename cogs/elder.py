@@ -8,7 +8,6 @@ from config import settings, color_pick, logger, emojis
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
-from oakdb import OakDB
 
 
 class Elder(commands.Cog):
@@ -67,6 +66,37 @@ class Elder(commands.Cog):
         else:
             logger(ctx, "WARNING", "elder", {"Request": command}, "User not authorized")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
+
+    @commands.command(name="war", aliases=["xar"])
+    async def war(self, ctx, add, player_input, discord_id):
+        player_tag = ""
+        if authorized(ctx.author.roles) and add == "add":
+            if player_input.startswith("#"):
+                player_tag = player_input[1:]
+            else:
+                oak_tag = "#CVCJR89"
+                await self.bot.test_channel.send("else1")
+                try:
+                    player = await self.bot.coc_client.get_player(f"#{player_input}")
+                    if player.clan.tag == oak_tag:
+                        player_tag = player_input
+                except:
+                    # Assume input provided is the player name
+                    members = await self.bot.coc_client.get_members(oak_tag)
+                    try:
+                        await self.bot.test_channel.send([member.name for member in members].index(player_input))
+                        player_tag = members[[member.name for member in members].index(player_input)].tag
+                    except:
+                        await self.bot.test_channel.send(f"{player_input} is not valid for the war add command."
+                                                         f"Attempted by {ctx.author} in {ctx.channel}.")
+                        return
+            is_user, user = is_discord_user(ctx.guild, discord_id)
+            if is_user:
+                await self.bot.db.link_user(player_tag, discord_id)
+            else:
+                await self.bot.test_channel.send(f"{discord_id} is not valid for the war add command."
+                                                 f"Attempted by {ctx.author} in {ctx.channel}.")
+
 
     @commands.command(name="giphy", hidden=True)
     async def giphy(self, ctx, gif_text):
@@ -370,7 +400,6 @@ def is_discord_user(guild, discord_id):
             return True, user
     except:
         return False, None
-
 
 scope = "https://www.googleapis.com/auth/spreadsheets.readonly"
 spreadsheetId = settings['google']['oaktableId']

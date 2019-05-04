@@ -41,10 +41,11 @@ if __name__ == "__main__":
             logger.info(f"Failed to load extension {extension}")
             traceback.print_exc()
 
-# loop = asyncio.get_event_loop()
-# pool = loop.run_until_complete(OakDB(bot).create_pool())
-# bot.pool = pool
+bot.db = OakDB(bot)
+loop = asyncio.get_event_loop()
+pool = loop.run_until_complete(bot.db.create_pool())
+bot.db.pool = pool
 bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
 bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
-bot.run(settings['discord']['oakbotToken'])
+bot.run(settings['discord']['testToken'])
 
