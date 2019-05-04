@@ -26,8 +26,8 @@ async def on_ready():
     logger.info("-------")
     logger.info(f"Logged in as {bot.user}")
     logger.info("-------")
-    channel = bot.get_channel(settings['oakChannels']['testChat'])
-    await channel.send("The Arborist is now planting trees")
+    bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
+    await bot.test_channel.send("The Arborist is now planting trees")
 
 
 initialExtensions = ["cogs.general", "cogs.members", "cogs.elder", "cogs.owner"]
@@ -46,6 +46,4 @@ loop = asyncio.get_event_loop()
 pool = loop.run_until_complete(bot.db.create_pool())
 bot.db.pool = pool
 bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
-bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
 bot.run(settings['discord']['testToken'])
-

@@ -64,6 +64,14 @@ class OwnerCog(commands.Cog):
             print(f"ERROR: {type(e).__name__} - {e}")
             await ctx.send(f"**`ERROR:`** {type(e).__name__} - {e}")
 
+    @commands.command()
+    @commands.is_owner()
+    async def close_db(self, ctx):
+        """Command to close db connection before shutting down bot"""
+        if self.bot.db.pool is not None:
+            await self.bot.db.pool.close()
+            await ctx.send("Database connection closed.")
+
 
 def setup(bot):
     bot.add_cog(OwnerCog(bot))

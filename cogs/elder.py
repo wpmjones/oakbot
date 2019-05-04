@@ -75,7 +75,6 @@ class Elder(commands.Cog):
                 player_tag = player_input[1:]
             else:
                 oak_tag = "#CVCJR89"
-                await self.bot.test_channel.send("else1")
                 try:
                     player = await self.bot.coc_client.get_player(f"#{player_input}")
                     if player.clan.tag == oak_tag:
@@ -84,19 +83,18 @@ class Elder(commands.Cog):
                     # Assume input provided is the player name
                     members = await self.bot.coc_client.get_members(oak_tag)
                     try:
-                        await self.bot.test_channel.send([member.name for member in members].index(player_input))
-                        player_tag = members[[member.name for member in members].index(player_input)].tag
+                        player_tag = members[[member.name for member in members].index(player_input)].tag[1:]
                     except:
                         await self.bot.test_channel.send(f"{player_input} is not valid for the war add command."
                                                          f"Attempted by {ctx.author} in {ctx.channel}.")
                         return
-            is_user, user = is_discord_user(ctx.guild, discord_id)
+            is_user, user = is_discord_user(ctx.guild, int(discord_id))
             if is_user:
-                await self.bot.db.link_user(player_tag, discord_id)
+                # commit info to database
+                await self.bot.db.link_user(player_tag, int(discord_id))
             else:
                 await self.bot.test_channel.send(f"{discord_id} is not valid for the war add command."
                                                  f"Attempted by {ctx.author} in {ctx.channel}.")
-
 
     @commands.command(name="giphy", hidden=True)
     async def giphy(self, ctx, gif_text):
