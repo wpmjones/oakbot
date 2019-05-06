@@ -35,16 +35,13 @@ class General(commands.Cog):
             await ctx.send(f"{emojis['other']['redx']} You must provide an in-game name for this "
                            f"command. Try /player TubaKid")
             return
-        conn = pymssql.connect(settings['database']['server'],
-                               settings['database']['username'],
-                               settings['database']['password'],
-                               settings['database']['database'])
-        cursor = conn.cursor(as_dict=True)
-        cursor.execute(f"SELECT * FROM coc_oak_playerStats WHERE playerName = '{player_name}'")
+        # pull non-in-game stats from db
+        conn = self.bot.db.pool
+        sql = f"SELECT * FROM oak_members WHERE player_name = '{player_name}'"
+        oak_stats = await conn.fetchrow(sql)
         try:
-            row = cursor.fetchone()
-            if row is None:
-                logger(ctx, "WARNING", "general", message=f"{player_name} not found in SQL database.")
+            if oak_stats is None:
+                logger(ctx, "WARNING", "general", message=f"{player_name} not found in PostgreSQL database.")
                 await ctx.send(f"{emojis['other']['redx']} The player you provided was not found in the database. "
                                f"Please try again.")
                 return
@@ -53,84 +50,74 @@ class General(commands.Cog):
             await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. <@251150854571163648> "
                            f"I was trying to look up {player_name} but the world conspired against me.")
             return
-
-        troopLevels = emojis['troops']['barb'] + str(row['barb'])
-        troopLevels += "    " + emojis['troops']['arch'] + str(row['archer']) if row['archer'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['goblin'] + str(row['goblin']) if row['goblin'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['giant'] + str(row['giant']) if row['giant'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['wb'] + str(row['wallbreaker']) if row['wallbreaker'] > 0 else ""
-        troopLevels += "\n" + emojis['troops']['loon'] + str(row['balloon']) if row['balloon'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['wiz'] + str(row['wizard']) if row['wizard'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['healer'] + str(row['healer']) if row['healer'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['drag'] + str(row['dragon']) if row['dragon'] > 0 else ""
-        troopLevels += "\n" + emojis['troops']['pekka'] + str(row['pekka']) if row['pekka'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['babydrag'] + str(row['babyDrag']) if row['babyDrag'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['miner'] + str(row['miner']) if row['miner'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['edrag'] + str(row['edrag']) if row['edrag'] > 0 else ""
-        troopLevels += "\n" + emojis['troops']['minion'] + str(row['minion']) if row['minion'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['hogs'] + str(row['hogRider']) if row['hogRider'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['valk'] + str(row['valkyrie']) if row['valkyrie'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['golem'] + str(row['golem']) if row['golem'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['witch'] + str(row['witch']) if row['witch'] > 0 else ""
-        troopLevels += "\n" + emojis['troops']['lava'] + str(row['lavaHound']) if row['lavaHound'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['bowler'] + str(row['bowler']) if row['bowler'] > 0 else ""
-        troopLevels += "    " + emojis['troops']['icegolem'] + str(row['icegolem']) if row['icegolem'] > 0 else ""
-        spellLevels = emojis['spells']['light'] + str(row['light'])
-        spellLevels += "    " + emojis['spells']['heal'] + str(row['heal']) if row['heal'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['rage'] + str(row['rage']) if row['rage'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['jump'] + str(row['jump']) if row['jump'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['freeze'] + str(row['freeze']) if row['freeze'] > 0 else ""
-        spellLevels += "\n" + emojis['spells']['poison'] + str(row['poison']) if row['poison'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['eq'] + str(row['earthquake']) if row['earthquake'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['haste'] + str(row['haste']) if row['haste'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['clone'] + str(row['clone']) if row['clone'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['skell'] + str(row['skeleton']) if row['skeleton'] > 0 else ""
-        spellLevels += "    " + emojis['spells']['bat'] + str(row['bat']) if row['bat'] > 0 else ""
-        builderLevels = emojis['buildTroops']['rbarb'] + str(row['ragedBarb'])
-        builderLevels += "    " + emojis['buildTroops']['sarch'] + str(row['sneakyArcher']) if row['sneakyArcher'] > 0 else ""
-        builderLevels += "    " + emojis['buildTroops']['beta'] + str(row['betaMinion']) if row['betaMinion'] > 0 else ""
-        builderLevels += "    " + emojis['buildTroops']['boxer'] + str(row['boxerGiant']) if row['boxerGiant'] > 0 else ""
-        builderLevels += "    " + emojis['buildTroops']['bomber'] + str(row['bomber']) if row['bomber'] > 0 else ""
-        builderLevels += "\n" + emojis['buildTroops']['pekka'] + str(row['superPekka']) if row['superPekka'] > 0 else ""
-        builderLevels += "    " + emojis['buildTroops']['cannon'] + str(row['cannonCart']) if row['cannonCart'] > 0 else ""
-        builderLevels += "    " + emojis['buildTroops']['dropship'] + str(row['dropShip']) if row['dropShip'] > 0 else ""
-        builderLevels += "    " + emojis['buildTroops']['babydrag'] + str(row['vsBabyDragon']) if row['vsBabyDragon'] > 0 else ""
-        builderLevels += "    " + emojis['buildTroops']['witch'] + str(row['nightWitch']) if row['nightWitch'] > 0 else ""
-        if row['barbKing'] > 0:
-            heroTitle = 'Hero Levels'
-            heroLevels = emojis['heroes']['bk'] + str(row['barbKing'])
-            heroLevels += "    " + emojis['heroes']['aq'] + str(row['archQueen']) if row['archQueen'] > 0 else ""
-            heroLevels += "    " + emojis['heroes']['gw'] + str(row['grandWarden']) if row['grandWarden'] > 0 else ""
+        # retrieve player info from coc.py
+        player_tag = f"#{oak_stats['player_tag']}"
+        player = await self.bot.coc_client.get_player(player_tag)
+        troop_levels = builder_levels = spell_levels = hero_levels = sm_levels = ""
+        troop_list = ""
+        count = 0
+        for name, troop in player.ordered_home_troops.items():
+            count += 1
+            troop_list += f"{count} - {name}\n"
+            if name == "Minion":
+                troop_levels += "\n"
+                count = 1
+            troop_levels += f"{emojis['troops'][name]}{str(troop.level)} "
+            if count % 6 == 0:
+                troop_levels += "\n"
+        await self.bot.test_channel.send(troop_list)
+        count = 0
+        for name, spell in player.ordered_spells.items():
+            count += 1
+            spell_levels += f"{emojis['spells'][name]}{str(spell.level)} "
+            if count % 6 == 0:
+                spell_levels += "\n"
+        count = 0
+        for name, troop in player.ordered_builder_troops.items():
+            count += 1
+            builder_levels += f"{emojis['buildTroops'][name]}{str(troop.level)} "
+            if count % 6 == 0:
+                builder_levels += "\n"
+        # Test for number of heroes
+        if len(player.ordered_heroes) > 0:
+            hero_title = "Hero Levels"
+            for name, hero in player.ordered_heroes.items():
+                if name != "Battle Machine":
+                    hero_levels += f"{emojis['heroes'][name]}{str(hero.level)} "
+                else:
+                    builder_hero = f"{emojis['heroes'][name]}{str(hero.level)}"
         else:
-            heroTitle = heroLevels = ""
-        builderHero = emojis['heroes']['bm'] + str(row['battleMachine'])
-        embed = discord.Embed(title=f"{emojis['league'][row['leagueEmoji'][1:-1]]} {row['playerName'].strip()} "
-                                    f"({row['tag'].strip()})",
+            # Leave blank for no heroes
+            hero_title = hero_levels = builder_hero = ""
+        embed = discord.Embed(title=f"{emojis['league'][get_league_emoji(player.league.name)]} "
+                                    f"{player.name} "
+                                    f"({player.tag})",
                               color=color_pick(226, 226, 26))
         embed.add_field(name="Town Hall",
-                        value=f"{emojis['thIcon'][row['thLevel']]} {str(row['thLevel'])}",
+                        value=f"{emojis['thIcon'][player.town_hall]} {str(player.town_hall)}",
                         inline=True)
-        embed.add_field(name="Trophies", value=row['trophies'], inline=True)
-        embed.add_field(name="Best Trophies", value=row['bestTrophies'], inline=True)
-        embed.add_field(name="War Stars", value=row['warStars'], inline=True)
-        embed.add_field(name="Attack Wins", value=row['attackWins'], inline=True)
-        embed.add_field(name="Defense Wins", value=row['defenseWins'], inline=True)
-        embed.add_field(name="Wars in Oak", value=row['numWars'], inline=True)
-        embed.add_field(name="Avg. Stars per War", value=str(round(row['avgStars'], 2)), inline=True)
-        embed.add_field(name="This Season", value=row['warStats'], inline=False)
-        embed.add_field(name="Troop Levels", value=troopLevels, inline=False)
-        embed.add_field(name="Spell Levels", value=spellLevels, inline=False)
-        embed.add_field(name=heroTitle, value=heroLevels, inline=False)
+        embed.add_field(name="Trophies", value=player.trophies, inline=True)
+        embed.add_field(name="Best Trophies", value=player.best_trophies, inline=True)
+        embed.add_field(name="War Stars", value=player.war_stars, inline=True)
+        embed.add_field(name="Attack Wins", value=player.attack_wins, inline=True)
+        embed.add_field(name="Defense Wins", value=player.defense_wins, inline=True)
+        embed.add_field(name="Wars in Oak", value=oak_stats['num_wars'], inline=True)
+        embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats['avg_stars'], 2)), inline=True)
+        embed.add_field(name="This Season", value=oak_stats['season_wars'], inline=False)
+        embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
+        embed.add_field(name="Spell Levels", value=spell_levels, inline=False)
+        embed.add_field(name=hero_title, value=hero_levels, inline=False)
+        # embed.add_field(name=sm_title, value=sm_levels, inline=False)
         embed.add_field(name="Builder Hall Level",
-                        value=f"{emojis['bhIcon'][row['builderHall']]} {str(row['builderHall'])}",
+                        value=f"{emojis['bhIcon'][player.builder_hall]} {str(player.builder_hall)}",
                         inline=False)
-        embed.add_field(name="Versus Trophies", value=str(row['vsTrophies']), inline=True)
-        embed.add_field(name="Versus Battle Wins", value=str(row['versusBattleWins']), inline=True)
-        embed.add_field(name="Best Versus Trophies", value=str(row['bestVsTrophies']), inline=True)
-        embed.add_field(name="Troop Levels", value=builderLevels, inline=False)
-        embed.add_field(name="Hero Levels", value=builderHero, inline=False)
+        embed.add_field(name="Versus Trophies", value=str(player.versus_trophies), inline=True)
+        embed.add_field(name="Versus Battle Wins", value=str(player.versus_attacks_wins), inline=True)
+        embed.add_field(name="Best Versus Trophies", value=str(player.best_versus_trophies), inline=True)
+        embed.add_field(name="Troop Levels", value=builder_levels, inline=False)
+        embed.add_field(name=hero_title, value=builder_hero, inline=False)
         embed.set_footer(icon_url="http://www.mayodev.com/images/coc/oakbadge.png",
-                         text=f"Member of Reddit Oak since {row['joinDate'].strftime('%e %B, %Y')}")
+                         text=f"Member of Reddit Oak since {oak_stats['join_date'].strftime('%e %B, %Y')}")
         logger(ctx, "INFO", "general", {"Player": player_name})
         await ctx.send(embed=embed)
 
@@ -193,14 +180,14 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="siege", aliases=["sm"])
-    async def siege_request(self, ctx, *, siege_type: str = "help"):
+    async def siege_request(self, ctx, *, siege_req: str = "help"):
         """- For requesting siege machines
         Options:
          - ground, ww, wall wrecker
          - air1, blimp, battle blimp, bb
          - air2, stone, slam, slammer, stone slammer"""
-        userId = ctx.author.id
-        if siege_type == "help":
+        user_id = ctx.author.id
+        if siege_req == "help":
             embed = discord.Embed(title="The Arborist by Reddit Oak", color=color_pick(15, 250, 15))
             embed.add_field(name="Commands:", value="-----------", inline=True)
             siege = ("Posts request for the specified siege machine in Discord and tags those players that can donate."
@@ -213,17 +200,17 @@ class General(commands.Cog):
             logger(ctx, "INFO", "general", {"Command": "siege", "Argument": "help"})
             await ctx.send(embed=embed)
             return
-        if siege_type in ["ground", "ww", "wall wrecker"]:
-            siegeType = "wallWrecker"
-            siegeName = "Wall Wrecker"
+        if siege_req in ["ground", "ww", "wall wrecker"]:
+            siege_type = "wallWrecker"
+            siege_name = "Wall Wrecker"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-ram.png"
-        elif siege_type in ["blimp", "air1", "bb", "battle blimp"]:
-            siegeType = "battleBlimp"
-            siegeName = "Battle Blimp"
+        elif siege_req in ["blimp", "air1", "bb", "battle blimp"]:
+            siege_type = "battleBlimp"
+            siege_name = "Battle Blimp"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-flyer.png"
-        elif siege_type in ["stone", "slammer", "slam", "air2", "stone slammer"]:
-            siegeType = "stoneSlammer"
-            siegeName = "Stone Slammer"
+        elif siege_req in ["stone", "slammer", "slam", "air2", "stone slammer"]:
+            siege_type = "stoneSlammer"
+            siege_name = "Stone Slammer"
             thumb = "https://coc.guide/static/imgs/troop/siege-bowler-balloon.png"
         else:
             await ctx.send("You have provided an invalid siege machine type. "
@@ -234,23 +221,23 @@ class General(commands.Cog):
                                settings['database']['password'],
                                settings['database']['database'])
         cursor = conn.cursor(as_dict=True)
-        cursor.execute("SELECT playerName FROM coc_oak_players WHERE slackId = '{}'".format(userId))
+        cursor.execute(f"SELECT playerName FROM coc_oak_players WHERE slackId = '{user_id}'")
         row = cursor.fetchone()
         requestor = row['playerName']
-        cursor.execute("SELECT playerName, slackId FROM coc_oak_playerStats WHERE {} >    0".format(siegeType))
+        cursor.execute(f"SELECT playerName, slackId FROM coc_oak_playerStats WHERE {siege_type} >    0")
         fetched = cursor.fetchall()
         conn.close()
         donors = []
         for row in fetched:
             donors.append(f"{row['playerName'].rstrip()}: <@{row['slackId']}>")
-        embed = discord.Embed(title=f"{siegeName} Request",
-                              description=f"{requestor} has requested a {siegeName}",
+        embed = discord.Embed(title=f"{siege_name} Request",
+                              description=f"{requestor} has requested a {siege_name}",
                               color=0xb5000)
         # embed.add_field(name = "Potential donors include:", value = "\n".join(donors))
         embed.set_footer(icon_url=thumb, text="Remember to select your seige machine when you attack!")
         content = "**Potential donors include:**\n"
         content += "\n".join(donors)
-        logger(ctx, "INFO", "general", {"Command": "siege", "Argument": siegeType})
+        logger(ctx, "INFO", "general", {"Command": "siege", "Argument": siege_req})
         await ctx.send(embed=embed)
         await ctx.send(content)
 
@@ -264,6 +251,37 @@ def is_discord_user(guild, discord_id):
             return True, user
     except:
         return False, None
+
+
+def get_league_emoji(league_name):
+    leagues = [
+        ("Titan League I", "titan1"),
+        ("Titan League II", "titan2"),
+        ("Titan League III", "titan3"),
+        ("Champion League I", "champs1"),
+        ("Champion League II", "champs2"),
+        ("Champion League III", "champs3"),
+        ("Master League I", "masters1"),
+        ("Master League II", "masters2"),
+        ("Master League III", "masters3"),
+        ("Crystal League I", "crystal1"),
+        ("Crystal League II", "crystal2"),
+        ("Crystal League III", "crystal3"),
+        ("Gold League I", "gold1"),
+        ("Gold League II", "gold2"),
+        ("Gold League III", "gold3"),
+        ("Silver League I", "silver1"),
+        ("Silver League II", "silver2"),
+        ("Silver League III", "silver3"),
+        ("Bronze League I", "bronze1"),
+        ("Bronze League II", "bronze2"),
+        ("Bronze League III", "bronze3"),
+        ("Unranked", "unranked")
+    ]
+    for league in leagues:
+        if league_name in league:
+            return league[1]
+
 
 
 def setup(bot):
