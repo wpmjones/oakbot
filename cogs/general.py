@@ -53,22 +53,29 @@ class General(commands.Cog):
         # retrieve player info from coc.py
         player_tag = f"#{oak_stats['player_tag']}"
         player = await self.bot.coc_client.get_player(player_tag)
-        troop_levels = builder_levels = spell_levels = hero_levels = sm_levels = ""
-        troop_list = ""
+        troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
+        sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer"]
         count = 0
         for name, troop in player.ordered_home_troops.items():
-            count += 1
-            troop_list += f"{count} - {name}\n"
-            if name == "Minion":
-                troop_levels += "\n"
-                count = 1
-            troop_levels += f"{emojis['troops'][name]}{str(troop.level)} "
-            if count % 6 == 0:
-                troop_levels += "\n"
-        await self.bot.test_channel.send(troop_list)
+            if name not in sm_troops:
+                count += 1
+                if name == "Minion":
+                    count = 1
+                    if troop_levels[-2:] == "\n":
+                        troop_levels += "\n"
+                    else:
+                        troop_levels += "\n\n"
+                troop_levels += f"{emojis['troops'][name]}{str(troop.level)} "
+                if count % 6 == 0:
+                    troop_levels += "\n"
+            else:
+                sm_levels += f"{emojis['siege'][name]}{str(troop.level)} "
         count = 0
         for name, spell in player.ordered_spells.items():
             count += 1
+            if name == "Poison Spell" and spell_levels[-2:] != "\n":
+                spell_levels += "\n"
+                count = 1
             spell_levels += f"{emojis['spells'][name]}{str(spell.level)} "
             if count % 6 == 0:
                 spell_levels += "\n"
@@ -80,15 +87,11 @@ class General(commands.Cog):
                 builder_levels += "\n"
         # Test for number of heroes
         if len(player.ordered_heroes) > 0:
-            hero_title = "Hero Levels"
             for name, hero in player.ordered_heroes.items():
                 if name != "Battle Machine":
                     hero_levels += f"{emojis['heroes'][name]}{str(hero.level)} "
                 else:
                     builder_hero = f"{emojis['heroes'][name]}{str(hero.level)}"
-        else:
-            # Leave blank for no heroes
-            hero_title = hero_levels = builder_hero = ""
         embed = discord.Embed(title=f"{emojis['league'][get_league_emoji(player.league.name)]} "
                                     f"{player.name} "
                                     f"({player.tag})",
@@ -105,9 +108,11 @@ class General(commands.Cog):
         embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats['avg_stars'], 2)), inline=True)
         embed.add_field(name="This Season", value=oak_stats['season_wars'], inline=False)
         embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
+        if sm_levels != "":
+            embed.add_field(name="Siege Machines", value=sm_levels, inline=False)
         embed.add_field(name="Spell Levels", value=spell_levels, inline=False)
-        embed.add_field(name=hero_title, value=hero_levels, inline=False)
-        # embed.add_field(name=sm_title, value=sm_levels, inline=False)
+        if hero_levels != "":
+            embed.add_field(name="Heroes", value=hero_levels, inline=False)
         embed.add_field(name="Builder Hall Level",
                         value=f"{emojis['bhIcon'][player.builder_hall]} {str(player.builder_hall)}",
                         inline=False)
@@ -115,7 +120,8 @@ class General(commands.Cog):
         embed.add_field(name="Versus Battle Wins", value=str(player.versus_attacks_wins), inline=True)
         embed.add_field(name="Best Versus Trophies", value=str(player.best_versus_trophies), inline=True)
         embed.add_field(name="Troop Levels", value=builder_levels, inline=False)
-        embed.add_field(name=hero_title, value=builder_hero, inline=False)
+        if builder_hero != "":
+            embed.add_field(name="Hero", value=builder_hero, inline=False)
         embed.set_footer(icon_url="http://www.mayodev.com/images/coc/oakbadge.png",
                          text=f"Member of Reddit Oak since {oak_stats['join_date'].strftime('%e %B, %Y')}")
         logger(ctx, "INFO", "general", {"Player": player_name})
