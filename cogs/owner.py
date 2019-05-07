@@ -1,3 +1,4 @@
+import traceback
 import discord
 from datetime import datetime
 from discord.ext import commands
@@ -85,6 +86,14 @@ class OwnerCog(commands.Cog):
                              icon_url="http://www.mayodev.com/images/arborist128.png")
             embed.add_field(name=desc, value="\n".join([line for line in f.read().splitlines()[list_start:]]))
         await ctx.send(embed=embed)
+
+    @log.error
+    async def log_handler(self, ctx, error):
+        """Listens for errors in log command"""
+        tb_lines = traceback.format_exception(error.__class__, error, error.__traceback__)
+        tb_text = "".join(tb_lines)
+        await ctx.send(f"Exception found in {ctx.command}:\n"
+                       f"{tb_text}")
 
 
 def setup(bot):
