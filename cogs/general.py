@@ -167,7 +167,7 @@ class General(commands.Cog):
         # respond if help is requested for a command that does not exist
         if command not in ["all", "siege", "player", "elder"]:
             self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Request: /help {command} - command does not exist")
+                                    f"Problem: /help {command} - command does not exist")
             await ctx.send(f"{emojis['other']['redx']} You have provided a command that does not exist. "
                            f"Perhaps try /help to see all commands.")
             return
