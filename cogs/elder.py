@@ -4,7 +4,7 @@ import requests
 import asyncio
 from discord.ext import commands
 from datetime import datetime, timedelta
-from config import settings, color_pick, logger, emojis
+from config import settings, color_pick, emojis
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
@@ -62,13 +62,17 @@ class Elder(commands.Cog):
                 presence = "Change the bot presence (message under bot name) to the default OR the specified message."
                 embed.add_field(name="/presence <default or message>", value=presence, inline=False)
             await ctx.send(embed=embed)
-            logger(ctx, "INFO", "elder", {"Request": command})
+            self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
         else:
-            logger(ctx, "WARNING", "elder", {"Request": command}, "User not authorized")
+            self.bot.logger.warning(f"User not authorized - "
+                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="war", aliases=["xar"])
     async def war(self, ctx, add, player_input, discord_id):
+        """This command mirrors the warbot command to link discord id to player tag
+        Since the elders are already using the command, this snags the same line and
+        uses the information to add records in the PostgreSQL database to link the same."""
         player_tag = ""
         if authorized(ctx.author.roles) and add == "add":
             if player_input.startswith("#"):
@@ -92,6 +96,7 @@ class Elder(commands.Cog):
             if is_user:
                 # commit info to database
                 await self.bot.db.link_user(player_tag, int(discord_id))
+                self.bot.logger.debug(f"Discord ID successfully added to db for {player_input}.")
             else:
                 await self.bot.test_channel.send(f"{discord_id} is not valid for the war add command."
                                                  f"Attempted by {ctx.author} in {ctx.channel}.")
@@ -140,7 +145,9 @@ class Elder(commands.Cog):
                 await user.remove_roles(role_obj, reason=f"Arborist command issued by {ctx.author}")
                 await ctx.send(f":white_check_mark: Changed roles for {user.display_name}, -{role_name}")
         else:
-            logger(ctx, "WARNING", "elder", {"Player": player, "Role Name": role_name}, "User not authorized")
+            self.bot.logger.warning(f"User not authorized - "
+                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Request: {role_name} for {player}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="kick", aliases=["ban"], hidden=True)
@@ -195,18 +202,23 @@ class Elder(commands.Cog):
                     if is_user and ban == 1:
                         await user.kick(reason=reason)
                         content += f" {user.mention} kicked from server. If Discord ban is necessary, now is the time!"
-                    logger(ctx, "INFO", "elder", {"Player": player, "Reason": reason})
+                    self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                         f"{player} {ctx.command}ed for {reason}")
                     await ctx.send(content)
                 else:
-                    logger(ctx, "WARNING", "elder", {"Player": player}, "Player not found in Oak Table.")
+                    self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                            f"Problem: {player} not found in Oak Table")
                     await ctx.send("Player name not found in Oak Table. Please try again.")
                     return
             else:
-                logger(ctx, "WARNING", "elder", {"Player": player}, "Player not found in SQL Database.")
+                self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                        f"Problem: {player} not found in SQL Database")
                 await ctx.send("You have provided an invalid player name.  Please try again.")
                 return
         else:
-            logger(ctx, "WARNING", "elder", {"Player": player, "Reason": " ".join(reason)}, "User not authorized")
+            self.bot.logger.warning(f"User not authorized - "
+                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Request: {player} was {ctx.command}ed for {reason}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="warn", aliases=["warning", "watch"], hidden=True)
@@ -240,7 +252,7 @@ class Elder(commands.Cog):
                 embed.set_footer(icon_url=("https://openclipart.org/image/300px/svg_to_png/109/"
                                            "molumen-red-round-error-warning-icon.png"), 
                                  text="To remove a strike, use /warn remove <Warning ID>")
-                logger(ctx, "INFO", "elder", {"Command": "List"})
+                self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: List warnings")
                 await ctx.send(embed=embed)
                 return
             elif player == "remove":
@@ -260,7 +272,7 @@ class Elder(commands.Cog):
 
                 try:
                     reaction, user = await ctx.bot.wait_for("reaction_add", timeout=60.0, check=check)
-                    logger(ctx, "DEBUG", "elder", {}, f"Awaited reaction {reaction} with user {user}")
+                    self.bot.logger.debug(f"Awaited reaction {reaction} with user {user}")
                 except asyncio.TimeoutError:
                     await sent_msg.edit(content="Removal cancelled because I'm feeling ignored. Don't ask me "
                                                 "to do things then ignore my questions.")
@@ -276,8 +288,8 @@ class Elder(commands.Cog):
                                                 "Sorry. :frowning2: ")
                     return
                 cursor.execute(f"DELETE FROM coc_oak_warnings WHERE warningId = {warning[0]}")
-                logger(ctx, "INFO", "elder",
-                       {"Action": "Warning Removal", "Warning": fetched['warning'], "Player": fetched['playerName']})
+                self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                      f"Request: Removal of {fetched['warning']} for {fetched['playerName']}")
                 await sent_msg.edit(content=f"Warning **{fetched['warning']}** "
                                             f"removed for **{fetched['playerName']}**.")
             else:
@@ -298,16 +310,18 @@ class Elder(commands.Cog):
                         await ctx.send(emoji + " " + strike['warnDate'] + " - " + strike['warning'])
                         await member.send(f"{emoji} {strike['warnDate']} - {strike['warning']}")
                         emoji += ":x:"
-                    logger(ctx, "INFO", "elder", {"Player": player, "Warning": warning})
+                    self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                          f"Request: {player} warned for {warning}")
                 else:
-                    logger(ctx, "WARN", "elder", {"Player": player, "Warning": warning},
-                           "Player name not found in SQL Database.")
+                    self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                            f"Problem: {player} not found in SQL database | Warning: {warning}")
                     await ctx.send("You have provided an invalid player name.  Please try again.")
                     return
                 conn.close()
         else:
-            logger(ctx, "WARNING", "elder", {"Player": player, "Warning": " ".join(warning)},
-                   "User not authorized")
+            self.bot.logger.warning(f"User not authorized - "
+                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Request: Warning for {player} for {' '.join(warning)}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="unconfirmed", aliases=["un"], hidden=True)
@@ -355,14 +369,16 @@ class Elder(commands.Cog):
                         else:
                             row_num += 1
             else:
-                logger(ctx, "WARNING", "elder", {"Args": " ".join(args)}, "Invalid argument from user.")
+                self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                        f"Problem: Invalid arguments - {' '.join(args)}")
                 content = "You have provided an invalid argument. Please specify `list`, `kick`, or `move`."
                 await ctx.send(content)
                 return
-            logger(ctx, "INFO", ctx.command, args, content)
             await ctx.send(content)
         else:
-            logger(ctx, "WARNING", "elder", {"Args": " ".join(args)}, "User not authorized")
+            self.bot.logger.warning(f"User not authorized - "
+                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Request: {' '.join(args)}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="presence", hidden=True)
@@ -376,7 +392,9 @@ class Elder(commands.Cog):
             await self.bot.change_presence(status=discord.Status.online, activity=activity)
             print(f"{datetime.now()} - {ctx.author} changed the bot presence to {msg}")
         else:
-            logger(ctx, "WARNING", "elder", {"Presence": msg}, "User not authorized")
+            self.bot.logger.warning(f"User not authorized - "
+                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Request: Presence = {msg}")
             await ctx.send("Wait one cotton pickin' minute jackrabbit! That command is not for you!")
 
 
@@ -398,6 +416,7 @@ def is_discord_user(guild, discord_id):
             return True, user
     except:
         return False, None
+
 
 scope = "https://www.googleapis.com/auth/spreadsheets.readonly"
 spreadsheetId = settings['google']['oaktableId']

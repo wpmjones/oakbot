@@ -1,7 +1,7 @@
 import discord
 import pymssql
 from discord.ext import commands
-from config import settings, emojis, color_pick, logger
+from config import settings, emojis, color_pick
 
 
 class General(commands.Cog):
@@ -31,7 +31,8 @@ class General(commands.Cog):
     async def player(self, ctx, *, player_name: str = "x"):
         """Provide details on the specified player"""
         if player_name == "x":
-            logger(ctx, "WARNING", "general", message="Name not provided")
+            self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Problem: No player name was provided.")
             await ctx.send(f"{emojis['other']['redx']} You must provide an in-game name for this "
                            f"command. Try /player TubaKid")
             return
@@ -41,12 +42,14 @@ class General(commands.Cog):
         oak_stats = await conn.fetchrow(sql)
         try:
             if oak_stats is None:
-                logger(ctx, "WARNING", "general", message=f"{player_name} not found in PostgreSQL database.")
+                self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                        f"Problem: {player_name} not found in PostgreSQL database")
                 await ctx.send(f"{emojis['other']['redx']} The player you provided was not found in the database. "
                                f"Please try again.")
                 return
         except:
-            logger(ctx, "ERROR", "general", {"Player": player_name}, "Unknown error occurred")
+            self.bot.logger.error(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                  f"Unknown error has occurred")
             await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. <@251150854571163648> "
                            f"I was trying to look up {player_name} but the world conspired against me.")
             return
@@ -124,7 +127,8 @@ class General(commands.Cog):
             embed.add_field(name="Hero", value=builder_hero, inline=False)
         embed.set_footer(icon_url="http://www.mayodev.com/images/coc/oakbadge.png",
                          text=f"Member of Reddit Oak since {oak_stats['join_date'].strftime('%e %B, %Y')}")
-        logger(ctx, "INFO", "general", {"Player": player_name})
+        self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                              f"Request complete: /player {player_name}")
         await ctx.send(embed=embed)
 
     @commands.command(name="avatar", hidden=True)
@@ -148,7 +152,8 @@ class General(commands.Cog):
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
         embed.set_image(url=user.avatar_url_as(size=128))
         await ctx.send(embed=embed)
-        logger(ctx, "INFO", "general", {"Member": member})
+        self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                              f"Request complete: /avatar {member}")
 
     @commands.command(name="help", hidden=True)
     async def help(self, ctx, command: str = "all"):
@@ -161,7 +166,8 @@ class General(commands.Cog):
             return
         # respond if help is requested for a command that does not exist
         if command not in ["all", "siege", "player", "elder"]:
-            logger(ctx, "WARN", "general", {"Command": command})
+            self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Request: /help {command} - command does not exist")
             await ctx.send(f"{emojis['other']['redx']} You have provided a command that does not exist. "
                            f"Perhaps try /help to see all commands.")
             return
@@ -182,7 +188,8 @@ class General(commands.Cog):
             embed.add_field(name="/elder", value=elder, inline=False)
         embed.set_footer(icon_url="https://openclipart.org/image/300px/svg_to_png/122449/1298569779.png",
                          text="The Arborist proudly maintained by TubaKid.")
-        logger(ctx, "INFO", "general", {"Command": command})
+        self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                              f"Request complete: /help {command}")
         await ctx.send(embed=embed)
 
     @commands.command(name="siege", aliases=["sm"])
@@ -203,7 +210,6 @@ class General(commands.Cog):
             embed.add_field(name="/siege <siege type>", value=siege, inline=False)
             embed.set_footer(icon_url="https://openclipart.org/image/300px/svg_to_png/122449/1298569779.png",
                              text="The Arborist proudly maintained by TubaKid.")
-            logger(ctx, "INFO", "general", {"Command": "siege", "Argument": "help"})
             await ctx.send(embed=embed)
             return
         if siege_req in ["ground", "ww", "wall wrecker"]:
@@ -243,7 +249,6 @@ class General(commands.Cog):
         embed.set_footer(icon_url=thumb, text="Remember to select your seige machine when you attack!")
         content = "**Potential donors include:**\n"
         content += "\n".join(donors)
-        logger(ctx, "INFO", "general", {"Command": "siege", "Argument": siege_req})
         await ctx.send(embed=embed)
         await ctx.send(content)
 

@@ -8,8 +8,7 @@ from discord.ext import commands
 from config import settings
 from oakdb import OakDB
 
-logger.add("oakbot.log", rotation="100MB",
-           format="{time:YYYY-MM-DD HH:mm:ss} {level} {message}", level="INFO")
+logger.add("oakbot.log", rotation="100MB", level="INFO")
 logger.info("Starting bot")
 
 description = """Welcome to The Arborist - by TubaKid
@@ -45,5 +44,6 @@ bot.db = OakDB(bot)
 loop = asyncio.get_event_loop()
 pool = loop.run_until_complete(bot.db.create_pool())
 bot.db.pool = pool
+bot.logger = logger
 bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
 bot.run(settings['discord']['oakbotToken'])
