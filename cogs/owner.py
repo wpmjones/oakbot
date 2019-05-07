@@ -84,7 +84,7 @@ class OwnerCog(commands.Cog):
             embed = discord.Embed(title="OakBot Log", color=0x8d0798)
             embed.set_footer(text=f"Log requested at {datetime.now()}",
                              icon_url="http://www.mayodev.com/images/arborist128.png")
-            embed.add_field(name=desc, value="\n".join([line for line in f.read().splitlines()[list_start:]]))
+            embed.add_field(name=desc, value="\n".join([line[:1000] for line in f.read().splitlines()[list_start:]]))
         await ctx.send(embed=embed)
 
     @log.error
@@ -92,8 +92,8 @@ class OwnerCog(commands.Cog):
         """Listens for errors in log command"""
         tb_lines = traceback.format_exception(error.__class__, error, error.__traceback__)
         tb_text = "".join(tb_lines)
-        await ctx.send(f"Exception found in {ctx.command}:\n"
-                       f"{tb_text}")
+        await self.bot.test_channel.send(f"Exception found in {ctx.command}:\n"
+                                         f"{tb_text}")
 
 
 def setup(bot):
