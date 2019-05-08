@@ -334,6 +334,7 @@ class Elder(commands.Cog):
             attacks_needed = int(200 * percent)
             donates_needed = int(600 * percent)
             clan = await self.bot.coc_client.get_clan("#CVCJR89")
+            self.bot.logger.debug("Clan retrieved")
             warn_text = (f"**We are {season.get_days_since()} days into a {season.get_season_length()} day season.\n"
                          f"These statistics are based on what players should have this far into the season.**\n\n"
                          f"*TH8 or below*\n")
@@ -351,7 +352,6 @@ class Elder(commands.Cog):
             warn_text += low_text
             warn_text += "\n\n*TH9 or above*\n"
             warn_text += high_text
-            # send message to coc-chat channel
             await msg.edit(content=warn_text)
         else:
             self.bot.logger.warning(f"User not authorized - "
