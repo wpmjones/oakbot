@@ -8,7 +8,7 @@ from discord.ext import commands
 from config import settings
 from oakdb import OakDB
 
-logger.add("oakbot.log", rotation="100MB", level="DEBUG")
+logger.add("oakbot.log", rotation="100MB", level="INFO")
 logger.info("Starting bot")
 
 description = """Welcome to The Arborist - by TubaKid
