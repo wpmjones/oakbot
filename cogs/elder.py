@@ -2,6 +2,7 @@ import discord
 import pymssql
 import requests
 import asyncio
+import season
 from discord.ext import commands
 from datetime import datetime, timedelta
 from config import settings, color_pick, emojis
@@ -324,6 +325,39 @@ class Elder(commands.Cog):
                                     f"Request: Warning for {player} for {' '.join(warning)}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
+    @commands.command(name="stats", aliases=["stat", "check", "donations"], hidden=True)
+    async def stats(self, ctx):
+        """ Respond with those players not yet meeting attack/donation rules """
+        if authorized(ctx.author.roles):
+            msg = await ctx.send("Retreiving statistics. One moment please.")
+            percent = season.get_days_since() / season.get_season_length()
+            attacks_needed = int(200 * percent)
+            donates_needed = int(600 * percent)
+            clan = await self.bot.coc_client.get_clan("#CVCJR89")
+            warn_text = (f"**We are {season.get_days_since()} days into a {season.get_season_length()} day season.\n"
+                         f"These statistics are based on what players should have this far into the season.**\n\n"
+                         f"*TH8 or below*\n")
+            low_text = high_text = ""
+            async for player in clan.get_detailed_members():
+                self.bot.logger.debug(f"Evaluating {player.name}")
+                if player.tag == "#Y29CGU0Q":  # Skip Connie
+                    continue
+                if player.town_hall <= 8 and player.attack_wins < attacks_needed:
+                    low_text += (f"{player.name}{th_superscript(player.town_hall)} "
+                                 f"is below {attacks_needed} attack wins ({player.attack_wins}).\n")
+                elif player.town_hall >= 9 and player.donations < donates_needed:
+                    high_text += (f"{player.name}{th_superscript(player.town_hall)} "
+                                  f"is below {donates_needed} donations ({player.donations}).\n")
+            warn_text += low_text
+            warn_text += "\n\n*TH9 or above*\n"
+            warn_text += high_text
+            # send message to coc-chat channel
+            await msg.edit(content=warn_text)
+        else:
+            self.bot.logger.warning(f"User not authorized - "
+                                    f"{ctx.command} by {ctx.author} in {ctx.channel}")
+            await ctx.send("Wait a minute punk! You aren't allowed to use that command")
+
     @commands.command(name="unconfirmed", aliases=["un"], hidden=True)
     async def unconfirmed(self, ctx, *args):
         """Commands to deal with players who have not confirmed the rules
@@ -416,6 +450,23 @@ def is_discord_user(guild, discord_id):
             return True, user
     except:
         return False, None
+
+
+def sup(c):
+    superscript_numbers = u"⁰¹²³⁴⁵⁶⁷⁸⁹"
+    if ord(c) >= ord('0') and ord(c) <= ord('9'):
+        return superscript_numbers[ord(c) - ord('0')]
+    else:
+        return c
+
+
+# converts number to superscript
+def th_superscript(s):
+    s = str(s)
+    ret = u""
+    for c in s:
+        ret += sup(c)
+    return ret
 
 
 scope = "https://www.googleapis.com/auth/spreadsheets.readonly"
