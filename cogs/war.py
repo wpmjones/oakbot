@@ -28,7 +28,6 @@ class WarSetup(commands.Cog):
                     names = []
                     for row in rows:
                         is_user, user = is_discord_user(guild, int(row['discord_id']))
-                        print(user.display_name)
                         if not is_user:
                             self.bot.logger.error(f"Not a valid Discord ID\n"
                                                   f"Player Tag: {row['player_tag']}\n"
