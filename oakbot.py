@@ -15,7 +15,7 @@ description = """Welcome to The Arborist - by TubaKid
 
 All commands must begin with a slash"""
 
-bot = commands.Bot(command_prefix="/", description=description, case_insensitive=True)
+bot = commands.Bot(command_prefix=">", description=description, case_insensitive=True)
 bot.remove_command("help")
 bot.repo = git.Repo(os.getcwd())
 
@@ -29,7 +29,7 @@ async def on_ready():
     await bot.test_channel.send("The Arborist is now planting trees")
 
 
-initialExtensions = ["cogs.general", "cogs.members", "cogs.elder", "cogs.owner", "cogs.war"]
+initialExtensions = ["cogs.general", "cogs.members", "cogs.elder", "cogs.owner"]
 
 if __name__ == "__main__":
     for extension in initialExtensions:
@@ -46,4 +46,4 @@ pool = loop.run_until_complete(bot.db.create_pool())
 bot.db.pool = pool
 bot.logger = logger
 bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'])
-bot.run(settings['discord']['oakbotToken'])
+bot.run(settings['discord']['testToken'])

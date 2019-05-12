@@ -7,6 +7,7 @@ from config import settings
 class WarSetup(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.change_flag = 0
 
     async def war_roles(self):
         """ Assign inWar role to those participating in the current war """
@@ -18,7 +19,7 @@ class WarSetup(commands.Cog):
         while self == self.bot.get_cog("WarSetup"):
             try:
                 war = await self.bot.coc_client.get_current_war("#CVCJR89")
-                if war.state in ["preparation", "inWar"]:
+                if war.state in ["preparation", "inWar"] and self.change_flag == 0:
                     # find members in current war and assign role
                     player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
                     sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
@@ -35,15 +36,17 @@ class WarSetup(commands.Cog):
                             continue
                         await user.add_roles(war_role, reason="Auto add role for war.")
                         names.append(user.display_name)
-                    sleep_time = 172800
+                    sleep_time = war.end_time.seconds_until
                     if names:
                         embed = discord.Embed(title="War roles added", color=discord.Color.red())
                         embed.add_field(name="Members in War", value="\n".join(names), inline=False)
                         await channel.send(embed=embed)
+                        # change_flag tells the function that roles have already been assigned
+                        change_flag = 1
                         self.bot.logger.info("inWar role added automatically")
                     else:
                         self.bot.logger.warning("No players found in names list")
-                else:
+                elif war.state in ["warEnded", "notInWar"] and self.change_flag == 1:
                     sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                            f"FROM rcs_discord_links")
                     rows = await conn.fetch(sql)
@@ -55,9 +58,12 @@ class WarSetup(commands.Cog):
                                                   f"Discord ID: {row['discord_id']}\n")
                             pass
                         await user.remove_roles(war_role, reason="Auto remove role after end of war.")
-                    sleep_time = 86400
+                    sleep_time = 900
+                    self.change_flag = 0
                     await channel.send("inWar roles removed for all players.")
                     self.bot.logger.info("inWar role removed automatically")
+                else:
+                    sleep_time = 900
                 await asyncio.sleep(sleep_time)
             except:
                 self.bot.logger.exception("War Roles")
