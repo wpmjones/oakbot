@@ -20,7 +20,7 @@ class WarSetup(commands.Cog):
                 war = await self.bot.coc_client.get_current_war("#CVCJR89")
                 if war.state in ["preparation", "inWar"]:
                     # find members in current war and assign role
-                    player_tags = [member.tag[1:] for member in war.members]
+                    player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
                     sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                            f"FROM rcs_discord_links "
                            f"WHERE player_tag = ANY($1)")
