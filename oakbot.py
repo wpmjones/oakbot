@@ -29,7 +29,7 @@ async def on_ready():
     await bot.test_channel.send("The Arborist is now planting trees")
 
 
-initialExtensions = ["cogs.general", "cogs.members", "cogs.elder", "cogs.owner"]
+initialExtensions = ["cogs.general", "cogs.members", "cogs.elder", "cogs.owner", "cogs.war"]
 
 if __name__ == "__main__":
     for extension in initialExtensions:
