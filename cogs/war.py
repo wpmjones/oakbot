@@ -12,14 +12,21 @@ class WarSetup(commands.Cog):
         """ Assign inWar role to those participating in the current war """
         await self.bot.wait_until_ready()
         conn = self.bot.db.pool
-        channel = self.bot.get_channel(settings['oakChannels']['elderChat'])
+        channel = self.bot.get_channel(settings['oakChannels']['testChat'])
         guild = self.bot.get_guild(settings['discord']['oakGuildId'])
-        war_role = guild.get_role(int(settings['oakRoles']['inwar']))
         sleep_time = 900
+        war_state = ["notInWar", "warEnded"]
         while self == self.bot.get_cog("WarSetup"):
+            self.bot.logger.info(f"I will now sleep for {sleep_time / 3600} hours.")
+            await asyncio.sleep(sleep_time)
             war = await self.bot.coc_client.get_current_war("#CVCJR89")
+            if war.state in war_state:
+                # roles are already set for the current war state
+                sleep_time = 900
+                continue
             if war.state in ["preparation", "inWar"]:
                 # find members in current war and assign role
+                war_role = guild.get_role(int(settings['oakRoles']['inwar']))
                 player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
                 sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                        f"FROM rcs_discord_links "
@@ -36,7 +43,7 @@ class WarSetup(commands.Cog):
                             continue
                         await user.add_roles(war_role, reason="Auto add role for war.")
                         names.append(user.display_name)
-                    sleep_time = war.end_time.seconds_until
+                    sleep_time = war.end_time.seconds_until + 900
                 except:
                     self.bot.logger.exception("War Roles")
                 try:
@@ -49,26 +56,21 @@ class WarSetup(commands.Cog):
                         self.bot.logger.warning("No players found in names list")
                 except:
                     self.bot.logger.exception("War Roles")
+                war_state = ["preparation", "inWar"]
             else:
-                sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
-                       f"FROM rcs_discord_links")
-                rows = await conn.fetch(sql)
+                # refresh role object, pull members with that role, remove the role
+                war_role = guild.get_role(int(settings['oakRoles']['inwar']))
+                members = war_role.members
+                print(members)
                 try:
-                    for row in rows:
-                        is_user, user = is_discord_user(guild, int(row['discord_id']))
-                        if not is_user:
-                            self.bot.logger.error(f"Not a valid Discord ID\n"
-                                                  f"Player Tag: {row['player_tag']}\n"
-                                                  f"Discord ID: {row['discord_id']}\n")
-                            pass
+                    for user in members:
                         await user.remove_roles(war_role, reason="Auto remove role after end of war.")
                 except:
                     self.bot.logger.exception("War Roles")
                 sleep_time = 900
                 await channel.send("inWar roles removed for all players.")
                 self.bot.logger.info("inWar role removed automatically")
-            self.bot.logger.info(f"I will now sleep for {sleep_time/3600} hours.")
-            await asyncio.sleep(sleep_time)
+                war_state = ["warEnded", "notInWar"]
 
 
 def is_discord_user(guild, discord_id):
