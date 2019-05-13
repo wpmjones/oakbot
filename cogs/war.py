@@ -12,7 +12,7 @@ class WarSetup(commands.Cog):
         """ Assign inWar role to those participating in the current war """
         await self.bot.wait_until_ready()
         conn = self.bot.db.pool
-        channel = self.bot.get_channel(settings['oakChannels']['testChat'])
+        channel = self.bot.get_channel(settings['oakChannels']['elderChat'])
         guild = self.bot.get_guild(settings['discord']['oakGuildId'])
         war_role = guild.get_role(int(settings['oakRoles']['inwar']))
         sleep_time = 900
@@ -36,7 +36,6 @@ class WarSetup(commands.Cog):
                             continue
                         await user.add_roles(war_role, reason="Auto add role for war.")
                         names.append(user.display_name)
-                    self.bot.logger.info(f"War ends in {war.end_time.seconds_until} seconds.")
                     sleep_time = war.end_time.seconds_until
                 except:
                     self.bot.logger.exception("War Roles")
