@@ -21,7 +21,7 @@ class General(commands.Cog):
             await message.channel.send("Reddit Oak rules can be found here - "
                                        "https://www.reddit.com/r/CoC_RedditOak/wiki/moderation/general_rules")
             return
-        if message.content.startswith("!invite"):
+        if "!invite" in message.content:
             await message.channel.send("https://discord.me/redditoak")
             return
         if any(word in message.content for word in ["signup", "sign-up", "sign up"]):
