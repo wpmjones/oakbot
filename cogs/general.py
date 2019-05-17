@@ -1,5 +1,6 @@
 import discord
 import pymssql
+import asyncpg
 from discord.ext import commands
 from config import settings, emojis, color_pick
 
@@ -231,20 +232,32 @@ class General(commands.Cog):
             await ctx.send("You have provided an invalid siege machine type. "
                            "Please specify `ground`, `blimp`, or `slammer`")
             return
-        conn = pymssql.connect(settings['database']['server'],
-                               settings['database']['username'],
-                               settings['database']['password'],
-                               settings['database']['database'])
-        cursor = conn.cursor(as_dict=True)
-        cursor.execute(f"SELECT playerName FROM coc_oak_players WHERE slackId = '{user_id}'")
-        row = cursor.fetchone()
-        requestor = row['playerName']
-        cursor.execute(f"SELECT playerName, slackId FROM coc_oak_playerStats WHERE {siege_type} >    0")
-        fetched = cursor.fetchall()
-        conn.close()
+        conn = self.bot.db.pool
+        sql = "SELECT player_tag, discord_id FROM oak_discord"
+        rows = await conn.fetch(sql)
+        discord_dict = {}
+        for row in rows:
+            discord_dict[row['player_tag']] = row['discord_id']
+        clan = await self.bot.coc_client.get_clan("#CVCJR89")
         donors = []
-        for row in fetched:
-            donors.append(f"{row['playerName'].rstrip()}: <@{row['slackId']}>")
+        async for player in clan.get_detailed_members():
+            troops = player.home_troops_dict("name")
+            if siege_name in troops.keys():
+                donors.append(f"{player.name}: {discord_dict[player.tag[1:]]}")
+        # conn = pymssql.connect(settings['database']['server'],
+        #                        settings['database']['username'],
+        #                        settings['database']['password'],
+        #                        settings['database']['database'])
+        # cursor = conn.cursor(as_dict=True)
+        # cursor.execute(f"SELECT playerName FROM coc_oak_players WHERE slackId = '{user_id}'")
+        # row = cursor.fetchone()
+        requestor = row['playerName']
+        # cursor.execute(f"SELECT playerName, slackId FROM coc_oak_playerStats WHERE {siege_type} >    0")
+        # fetched = cursor.fetchall()
+        # conn.close()
+        # donors = []
+        # for row in fetched:
+        #     donors.append(f"{row['playerName'].rstrip()}: <@{row['slackId']}>")
         embed = discord.Embed(title=f"{siege_name} Request",
                               description=f"{requestor} has requested a {siege_name}",
                               color=0xb5000)
