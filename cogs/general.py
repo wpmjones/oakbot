@@ -251,6 +251,7 @@ class General(commands.Cog):
             if player.tag == "Y29CGU0Q":
                 continue
             troops = player.home_troops_dict
+            print(troops)
             if siege_name in troops.keys():
                 self.bot.logger.debug(f"{player.name} has a {siege_name}.")
                 donors.append(f"{player.name}: <@{discord_dict[player.tag[1:]]}>")
