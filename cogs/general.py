@@ -203,6 +203,7 @@ class General(commands.Cog):
          - ground, ww, wall wrecker
          - air1, blimp, battle blimp, bb
          - air2, stone, slam, slammer, stone slammer"""
+        sent_msg = await ctx.send(f"One moment while I check to see who has those.")
         user_id = ctx.author.id
         if siege_req == "help":
             embed = discord.Embed(title="The Arborist by Reddit Oak", color=color_pick(15, 250, 15))
@@ -233,35 +234,31 @@ class General(commands.Cog):
                            "Please specify `ground`, `blimp`, or `slammer`")
             return
         conn = self.bot.db.pool
-        sql = "SELECT player_tag, discord_id FROM oak_discord"
+        # get all oak players and their discord id
+        sql = "SELECT player_name, player_tag, discord_id FROM oak_discord"
         rows = await conn.fetch(sql)
         discord_dict = {}
         for row in rows:
             discord_dict[row['player_tag']] = row['discord_id']
+            if row['discord_id'] == user_id:
+                requestor = row['player_name']
+        if not requestor:
+            requestor = ctx.author.name
+        self.bot.logger.debug(f"Requestor is {requestor}.")
         clan = await self.bot.coc_client.get_clan("#CVCJR89")
         donors = []
         async for player in clan.get_detailed_members():
-            troops = player.home_troops_dict("name")
+            if player.tag == "Y29CGU0Q":
+                continue
+            troops = player.home_troops_dict
             if siege_name in troops.keys():
-                donors.append(f"{player.name}: {discord_dict[player.tag[1:]]}")
-        # conn = pymssql.connect(settings['database']['server'],
-        #                        settings['database']['username'],
-        #                        settings['database']['password'],
-        #                        settings['database']['database'])
-        # cursor = conn.cursor(as_dict=True)
-        # cursor.execute(f"SELECT playerName FROM coc_oak_players WHERE slackId = '{user_id}'")
-        # row = cursor.fetchone()
-        requestor = row['playerName']
-        # cursor.execute(f"SELECT playerName, slackId FROM coc_oak_playerStats WHERE {siege_type} >    0")
-        # fetched = cursor.fetchall()
-        # conn.close()
-        # donors = []
-        # for row in fetched:
-        #     donors.append(f"{row['playerName'].rstrip()}: <@{row['slackId']}>")
+                self.bot.logger.debug(f"{player.name} has a {siege_name}.")
+                donors.append(f"{player.name}: <@{discord_dict[player.tag[1:]]}>")
+        self.bot.logger.debug(donors)
+        await sent_msg.delete()
         embed = discord.Embed(title=f"{siege_name} Request",
                               description=f"{requestor} has requested a {siege_name}",
                               color=0xb5000)
-        # embed.add_field(name = "Potential donors include:", value = "\n".join(donors))
         embed.set_footer(icon_url=thumb, text="Remember to select your seige machine when you attack!")
         content = "**Potential donors include:**\n"
         content += "\n".join(donors)
