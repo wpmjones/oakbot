@@ -14,10 +14,12 @@ if enviro == "LIVE":
     token = settings['discord']['oakbotToken']
     prefix = "/"
     log_level = "INFO"
+    coc_names = "vps"
 else:
     token = settings['discord']['testToken']
     prefix = ">"
     log_level = "DEBUG"
+    coc_names = "dev"
 
 logger.add("oakbot.log", rotation="100MB", level=log_level)
 
@@ -38,7 +40,7 @@ async def on_ready():
 
 
 @bot.event
-async def on_resumed(self):
+async def on_resumed():
     logger.info('resumed...')
 
 initialExtensions = ["cogs.general",
@@ -56,7 +58,7 @@ if __name__ == "__main__":
     bot.loop = loop
     bot.db.pool = pool
     bot.logger = logger
-    bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'], key_count=5)
+    bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'], key_names=coc_names)
 
     for extension in initialExtensions:
         try:

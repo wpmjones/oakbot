@@ -331,7 +331,7 @@ class Elder(commands.Cog):
         if authorized(ctx.author.roles):
             msg = await ctx.send("Retreiving statistics. One moment please.")
             percent = season.get_days_since() / season.get_season_length()
-            attacks_needed = int(200 * percent)
+            attacks_needed = int(20 * percent)
             donates_needed = int(600 * percent)
             clan = await self.bot.coc_client.get_clan("#CVCJR89")
             self.bot.logger.debug("Clan retrieved")

@@ -1,6 +1,4 @@
 import discord
-import pymssql
-import asyncpg
 from discord.ext import commands
 from config import settings, emojis, color_pick
 
@@ -10,9 +8,10 @@ class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
     async def on_message(self, message):
         """Auto-responder"""
-        if message.author.name == "The Arborist" or message.author.name == "Oak WarBot":
+        if message.author.name in ["The Arborist", "Oak WarBot", "Test Bot"]:
             return
         if "funnel" in message.content:
             await message.channel.send("Learn how to funnel here - https://youtu.be/0rWN9FLMGT4 - "
