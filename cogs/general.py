@@ -218,15 +218,15 @@ class General(commands.Cog):
             await ctx.send(embed=embed)
             return
         if siege_req in ["ground", "ww", "wall wrecker"]:
-            siege_type = "wallWrecker"
+            siege_type = "wall_recker"
             siege_name = "Wall Wrecker"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-ram.png"
         elif siege_req in ["blimp", "air1", "bb", "battle blimp"]:
-            siege_type = "battleBlimp"
+            siege_type = "battle_blimp"
             siege_name = "Battle Blimp"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-flyer.png"
         elif siege_req in ["stone", "slammer", "slam", "air2", "stone slammer"]:
-            siege_type = "stoneSlammer"
+            siege_type = "stone_slammer"
             siege_name = "Stone Slammer"
             thumb = "https://coc.guide/static/imgs/troop/siege-bowler-balloon.png"
         else:
@@ -234,27 +234,18 @@ class General(commands.Cog):
                            "Please specify `ground`, `blimp`, or `slammer`")
             return
         conn = self.bot.db.pool
-        # get all oak players and their discord id
-        sql = "SELECT player_name, player_tag, discord_id FROM oak_discord"
+        # get all oak players
+        sql = f"SELECT player_name, player_tag, discord_id, {siege_type} FROM oak_discord"
         rows = await conn.fetch(sql)
-        discord_dict = {}
+        donors = []
         for row in rows:
-            discord_dict[row['player_tag']] = row['discord_id']
             if row['discord_id'] == user_id:
                 requestor = row['player_name']
+            if row[siege_type] > 0:
+                donors.append(f"{row['player_name']}: <@{row['discord_id']}>")
         if not requestor:
             requestor = ctx.author.name
         self.bot.logger.debug(f"Requestor is {requestor}.")
-        clan = await self.bot.coc_client.get_clan("#CVCJR89")
-        donors = []
-        async for player in clan.get_detailed_members():
-            if player.tag == "Y29CGU0Q":
-                continue
-            troops = player.home_troops_dict
-            print(troops)
-            if siege_name in troops.keys():
-                self.bot.logger.debug(f"{player.name} has a {siege_name}.")
-                donors.append(f"{player.name}: <@{discord_dict[player.tag[1:]]}>")
         self.bot.logger.debug(donors)
         await sent_msg.delete()
         embed = discord.Embed(title=f"{siege_name} Request",
