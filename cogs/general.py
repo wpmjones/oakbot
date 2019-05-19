@@ -203,7 +203,6 @@ class General(commands.Cog):
          - ground, ww, wall wrecker
          - air1, blimp, battle blimp, bb
          - air2, stone, slam, slammer, stone slammer"""
-        sent_msg = await ctx.send(f"One moment while I check to see who has those.")
         user_id = ctx.author.id
         if siege_req == "help":
             embed = discord.Embed(title="The Arborist by Reddit Oak", color=color_pick(15, 250, 15))
@@ -218,7 +217,7 @@ class General(commands.Cog):
             await ctx.send(embed=embed)
             return
         if siege_req in ["ground", "ww", "wall wrecker"]:
-            siege_type = "wall_recker"
+            siege_type = "wall_wrecker"
             siege_name = "Wall Wrecker"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-ram.png"
         elif siege_req in ["blimp", "air1", "bb", "battle blimp"]:
@@ -233,6 +232,7 @@ class General(commands.Cog):
             await ctx.send("You have provided an invalid siege machine type. "
                            "Please specify `ground`, `blimp`, or `slammer`")
             return
+        sent_msg = await ctx.send(f"One moment while I check to see who has those.")
         conn = self.bot.db.pool
         # get all oak players
         sql = f"SELECT player_name, player_tag, discord_id, {siege_type} FROM oak_discord"
