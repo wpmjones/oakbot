@@ -47,6 +47,7 @@ initialExtensions = ["cogs.general",
                      "cogs.members",
                      "cogs.elder",
                      "cogs.owner",
+                     "cogs.warrole",
                      ]
 
 if __name__ == "__main__":
