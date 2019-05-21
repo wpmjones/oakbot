@@ -41,6 +41,10 @@ class General(commands.Cog):
             return
         # pull non-in-game stats from db
         conn = self.bot.db.pool
+        sql = (f"SELECT * FROM rcs_members WHERE clan_tag = 'CVCJR89' AND "
+               f"player_name = '{player_name}' AND "
+               f"time_stamp = (SELECT MAX(time_stamp) FROM rcs_members WHERE time_stamp < "
+               f"(SELECT MAX(time_stamp) FROM rcs_members))")
         sql = f"SELECT * FROM oak_members WHERE player_name = '{player_name}'"
         oak_stats = await conn.fetchrow(sql)
         try:
@@ -194,6 +198,10 @@ class General(commands.Cog):
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                               f"Request complete: /help {command}")
         await ctx.send(embed=embed)
+
+    @commands.command(name="sheet")
+    async def sheet(self, ctx):
+        await ctx.send(settings['google']['oaksheet'])
 
     @commands.command(name="siege", aliases=["sm"])
     async def siege_request(self, ctx, *, siege_req: str = "help"):
