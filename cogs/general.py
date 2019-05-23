@@ -29,6 +29,18 @@ class General(commands.Cog):
                                        f"<#{str(settings['oakChannels']['cocChat'])}> or "
                                        f"<#{str(settings['oakChannels']['oakWar'])}>")
             return
+        if "!th8" in message.content:
+            await message.channel.send("https://photos.google.com/share/AF1QipPWoqacyT79PJJ4gL9P2hfHqWt_OkEFr-"
+                                       "fjJSbFIgGhnF2aNM6MXMZtCzKKNo7JXw?key=N3JDOGRZd3oyMjc3dC1XZEhOVkl6cUNsb1lOSkFn")
+        if "!th9" in message.content:
+            await message.channel.send("https://photos.google.com/share/AF1QipN_cAARBgIIh_ZS01X2TbbkPrysVP9Kq3"
+                                       "MtEeP9vUg1Y_CsocI5IiI2vfAaJt05Pg?key=WEJINW9XbVRjOHNkbDlSWEFJR3FJcVBWeUJSRVhR")
+        if "!th10" in message.content:
+            await message.channel.send("https://photos.google.com/share/AF1QipMuOnHRFk72JODAd0qrNUZs3aJliE1zWC17bgD"
+                                       "u6olHzLmEQuGGCjzqRhz3NMDMNQ?key=NnNIVEpET2FscEJzVmpVVlcxRE1GdzhoSmRCeVFR")
+        if "!th11" in message.content:
+            await message.channel.send("https://photos.google.com/share/AF1QipPPrKuIqhzM82rebvhDEFxF-1dQeT7d48uWkn"
+                                       "KY0wOvvK7DPpI98K-4ysCuyvEfOQ?key=S0JFSGdEemppVzRvN3BhV243TXhaODNlcWRXOE9R")
 
     @commands.command(name="player")
     async def player(self, ctx, *, player_name: str = "x"):
