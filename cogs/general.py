@@ -151,28 +151,20 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="avatar", hidden=True)
-    async def avatar(self, ctx, member):
+    async def avatar(self, ctx, user: discord.Member):
         # convert discord mention to user id only
-        if member.startswith("<"):
-            discord_id = "".join(member[2:-1])
-            if discord_id.startswith("!"):
-                discord_id = discord_id[1:]
-        else:
-            await ctx.send(emojis['other']['redx'] + " I don't believe that's a real Discord user. "
-                                                     "Please make sure you are using the '@' prefix.")
-            return
         guild = ctx.bot.get_guild(settings['discord']['oakGuildId'])
-        is_user, user = is_discord_user(guild, int(discord_id))
-        if not is_user:
-            await ctx.send(f"{emojis['other']['redx']} User provided "
-                           f"**{member}** is not a member of this discord server.")
-            return
         embed = discord.Embed(color=discord.Color.blue())
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
         embed.set_image(url=user.avatar_url_as(size=128))
         await ctx.send(embed=embed)
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                              f"Request complete: /avatar {member}")
+                              f"Request complete: /avatar {user.display_name}")
+
+    @avatar.error
+    async def avatar_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("You may think so, but that's not a valid Discord user. Care to try again?")
 
     @commands.command(name="help", hidden=True)
     async def help(self, ctx, command: str = "all"):
