@@ -70,7 +70,7 @@ class Elder(commands.Cog):
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="war", aliases=["xar"])
-    async def war(self, ctx, add, player_input, discord_id):
+    async def war(self, ctx, add, player_input, user: discord.Member):
         """This command mirrors the warbot command to link discord id to player tag
         Since the elders are already using the command, this snags the same line and
         uses the information to add records in the PostgreSQL database to link the same."""
@@ -93,14 +93,14 @@ class Elder(commands.Cog):
                         await self.bot.test_channel.send(f"{player_input} is not valid for the war add command."
                                                          f"Attempted by {ctx.author} in {ctx.channel}.")
                         return
-            is_user, user = is_discord_user(ctx.guild, int(discord_id))
-            if is_user:
-                # commit info to database
-                await self.bot.db.link_user(player_tag, int(discord_id))
-                self.bot.logger.debug(f"Discord ID successfully added to db for {player_input}.")
-            else:
-                await self.bot.test_channel.send(f"{discord_id} is not valid for the war add command."
-                                                 f"Attempted by {ctx.author} in {ctx.channel}.")
+            await self.bot.db.link_user(player_tag, str(user.id))
+            self.bot.logger.debug(f"Discord ID successfully added to db for {player_input}.")
+
+    @war.error
+    async def war_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await self.bot.test_channel.send(f"{ctx.author} issued the /war command, but there was a problem "
+                                             f"with the Discord user.")
 
     @commands.command(name="giphy", hidden=True)
     async def giphy(self, ctx, gif_text):
@@ -135,6 +135,11 @@ class Elder(commands.Cog):
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                     f"Request: {role_name} for {user.discplay_name}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
+
+    @role.error
+    async def role_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("That is not a valid Discord user. Please try again.")
 
     @commands.command(name="kick", aliases=["ban"], hidden=True)
     async def kick(self, ctx, player, *reason):
