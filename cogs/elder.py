@@ -109,18 +109,9 @@ class Elder(commands.Cog):
 
     @commands.command(name="role", hidden=True)
     @commands.guild_only()
-    async def role(self, ctx, player, role_name):
+    async def role(self, ctx, user: discord.Member, role_name):
         """Command to add/remove roles from users"""
         if authorized(ctx.author.roles):
-            # convert discord mention to user id only
-            if player.startswith("<"):
-                discord_id = "".join(player[2:-1])
-                if discord_id.startswith("!"):
-                    discord_id = discord_id[1:]
-            else:
-                await ctx.send(emojis['other']['redx'] + (" I don't believe that's a real Discord user. "
-                                                          "Please make sure you are using the '@' prefix."))
-                return
             # get role ID for specified role
             guild = ctx.bot.get_guild(settings['discord']['oakGuildId'])
             if role_name.lower() not in settings['oakRoles']:
@@ -129,12 +120,6 @@ class Elder(commands.Cog):
                                                           "Try Guest, Member, Elder, or Co-Leader."))
                 return
             role_obj = guild.get_role(int(settings['oakRoles'][role_name.lower()]))
-            # test if has role, remove if has, else add
-            is_user, user = is_discord_user(guild, int(discord_id))
-            if not is_user:
-                await ctx.send(emojis['other']['redx'] + f" User provided **{player}** "
-                               f"is not a member of this discord server.")
-                return
             flag = True
             for role in user.roles:
                 if role.name.lower() == role_name.lower():
@@ -148,7 +133,7 @@ class Elder(commands.Cog):
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Request: {role_name} for {player}")
+                                    f"Request: {role_name} for {user.discplay_name}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="kick", aliases=["ban"], hidden=True)
