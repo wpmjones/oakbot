@@ -126,7 +126,8 @@ class Elder(commands.Cog):
                     flag = False
             if flag:
                 await user.add_roles(role_obj, reason=f"Arborist command issued by {ctx.author}")
-                await ctx.send(f":white_check_mark: Changed roles for {user.display_name}, +{role_name}")
+                await ctx.send(f":white_check_mark: Changed roles for {user.display_name}, +{role_name}\n"
+                               f"Is it also time to do `/war add`?")
             else:
                 await user.remove_roles(role_obj, reason=f"Arborist command issued by {ctx.author}")
                 await ctx.send(f":white_check_mark: Changed roles for {user.display_name}, -{role_name}")
