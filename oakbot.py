@@ -59,7 +59,7 @@ if __name__ == "__main__":
     bot.loop = loop
     bot.db.pool = pool
     bot.logger = logger
-    bot.coc_client = coc.Client(settings['supercell']['user'], settings['supercell']['pass'], key_names=coc_names)
+    bot.coc_client = coc.login(settings['supercell']['user'], settings['supercell']['pass'], key_names=coc_names)
 
     for extension in initialExtensions:
         try:
