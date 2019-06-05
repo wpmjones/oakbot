@@ -8,7 +8,7 @@ from discord.ext import commands
 from config import settings
 from oakdb import OakDB
 
-enviro = "dev"
+enviro = "LIVE"
 
 if enviro == "LIVE":
     token = settings['discord']['oakbotToken']
