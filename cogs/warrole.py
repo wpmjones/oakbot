@@ -17,7 +17,7 @@ class WarSetup(commands.Cog):
         conn = self.bot.db.pool
         war = await self.bot.coc_client.get_current_war("#CVCJR89")
         if war.state in ["preparation", "inWar"]:
-            msg = await self.channel.send("Adding roles. One moment...")
+            msg = await ctx.send("Adding roles. One moment...")
             war_role = self.guild.get_role(int(settings['oakRoles']['inwar']))
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
@@ -41,11 +41,11 @@ class WarSetup(commands.Cog):
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
                     embed.add_field(name="Members in War", value="\n".join(names), inline=False)
-                    hours_left = war.end_time.seconds_until // 3600
-                    minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
-                    embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
+                    #hours_left = war.end_time.seconds_until // 3600
+                    #minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
+                    #embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
                     await msg.delete()
-                    await self.channel.send(embed=embed)
+                    await ctx.send(embed=embed)
                     self.bot.logger.info("inWar role added automatically")
                 else:
                     self.bot.logger.warning("No players found in names list")
@@ -53,7 +53,7 @@ class WarSetup(commands.Cog):
                 self.bot.logger.exception("Send Embed")
         else:
             # refresh role object, pull members with that role, remove the role
-            msg = await self.channel.send("Removing war roles. One moment...")
+            msg = await ctx.send("Removing war roles. One moment...")
             war_role = self.guild.get_role(int(settings['oakRoles']['inwar']))
             members = war_role.members
             try:
@@ -62,7 +62,7 @@ class WarSetup(commands.Cog):
             except:
                 self.bot.logger.exception("War Roles")
             await msg.delete()
-            await self.channel.send("inWar roles removed for all players.")
+            await ctx.send("inWar roles removed for all players.")
             self.bot.logger.info("inWar role removed automatically")
 
 
