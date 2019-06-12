@@ -18,7 +18,7 @@ class WarSetup(commands.Cog):
         war = await self.bot.coc_client.get_current_war("#CVCJR89")
         if war.state in ["preparation", "inWar"]:
             msg = await ctx.send("Adding roles. One moment...")
-            war_role = self.guild.get_role(int(settings['oakRoles']['inwar']))
+            war_role = self.guild.get_role(settings['oakRoles']['inwar'])
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
@@ -36,14 +36,14 @@ class WarSetup(commands.Cog):
                     await user.add_roles(war_role, reason="Auto add role for war.")
                     names.append(user.display_name)
             except:
-                self.bot.logger.exception("Add roles")
+                self.bot.logger.exception("Failed while adding roles")
             try:
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
                     embed.add_field(name="Members in War", value="\n".join(names), inline=False)
-                    #hours_left = war.end_time.seconds_until // 3600
-                    #minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
-                    #embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
+                    # hours_left = war.end_time.seconds_until // 3600
+                    # minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
+                    # embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
                     await msg.delete()
                     await ctx.send(embed=embed)
                     self.bot.logger.info("inWar role added automatically")
