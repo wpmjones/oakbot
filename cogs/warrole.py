@@ -9,16 +9,17 @@ class WarSetup(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.channel = self.bot.get_channel(settings['oakChannels']['testChat'])
-        self.guild = self.bot.get_guild(settings['discord']['oakGuildId'])
 
     @commands.command(name="warroles", aliases=["warrole"], hidden=True)
     async def war_roles(self, ctx):
         """ Assign inWar role to those participating in the current war """
         conn = self.bot.db.pool
+        guild = self.bot.get_guild(settings['discord']['oakGuildId'])
+        print(guild)
         war = await self.bot.coc_client.get_current_war("#CVCJR89")
         if war.state in ["preparation", "inWar"]:
             msg = await ctx.send("Adding roles. One moment...")
-            war_role = self.guild.get_role(settings['oakRoles']['inwar'])
+            war_role = guild.get_role(settings['oakRoles']['inwar'])
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
@@ -27,7 +28,7 @@ class WarSetup(commands.Cog):
             names = []
             try:
                 for row in rows:
-                    is_user, user = is_discord_user(self.guild, int(row['discord_id']))
+                    is_user, user = is_discord_user(guild, int(row['discord_id']))
                     if not is_user:
                         self.bot.logger.error(f"Not a valid Discord ID\n"
                                               f"Player Tag: {row['player_tag']}\n"
@@ -41,9 +42,9 @@ class WarSetup(commands.Cog):
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
                     embed.add_field(name="Members in War", value="\n".join(names), inline=False)
-                    # hours_left = war.end_time.seconds_until // 3600
-                    # minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
-                    # embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
+                    hours_left = war.end_time.seconds_until // 3600
+                    minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
+                    embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
                     await msg.delete()
                     await ctx.send(embed=embed)
                     self.bot.logger.info("inWar role added automatically")
@@ -54,7 +55,7 @@ class WarSetup(commands.Cog):
         else:
             # refresh role object, pull members with that role, remove the role
             msg = await ctx.send("Removing war roles. One moment...")
-            war_role = self.guild.get_role(int(settings['oakRoles']['inwar']))
+            war_role = guild.get_role(int(settings['oakRoles']['inwar']))
             members = war_role.members
             try:
                 for user in members:
