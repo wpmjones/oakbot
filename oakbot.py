@@ -21,8 +21,6 @@ else:
     log_level = "DEBUG"
     coc_names = "dev"
 
-logger.add("oakbot.log", rotation="100MB", level=log_level)
-
 description = """Welcome to The Arborist - by TubaKid
 
 All commands must begin with a slash"""
@@ -42,6 +40,22 @@ async def on_ready():
 @bot.event
 async def on_resumed():
     logger.info('resumed...')
+
+
+@property
+def log_channel(self):
+    return self.get_channel(settings['logChannels']['oak'])
+
+
+def send_log(self, message):
+    asyncio.ensure_future(self.send_message(message))
+
+
+async def send_message(self, message):
+    await self.log_channel.send(f"`{message}`")
+
+logger.add("oakbot.log", rotation="100MB", level=log_level)
+logger.add(send_log, level="DEBUG")
 
 initialExtensions = ["cogs.general",
                      "cogs.members",
