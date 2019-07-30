@@ -34,6 +34,8 @@ async def on_ready():
     logger.info(f"Logged in as {bot.user}")
     logger.info("-------")
     bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
+    logger.add(send_log, level="DEBUG")
+    logger.info("The Arborist is now planting trees")
     await bot.test_channel.send("The Arborist is now planting trees")
 
 
@@ -42,20 +44,14 @@ async def on_resumed():
     logger.info('resumed...')
 
 
-@property
-def log_channel(self):
-    return self.get_channel(settings['logChannels']['oak'])
+def send_log(message):
+    asyncio.ensure_future(send_message(message))
 
 
-def send_log(self, message):
-    asyncio.ensure_future(self.send_message(message))
-
-
-async def send_message(self, message):
-    await self.log_channel.send(f"`{message}`")
+async def send_message(message):
+    await bot.get_channel(settings['logChannels']['oak']).send(f"`{message}`")
 
 logger.add("oakbot.log", rotation="100MB", level=log_level)
-logger.add(send_log, level="DEBUG")
 
 initialExtensions = ["cogs.general",
                      "cogs.members",
@@ -73,7 +69,10 @@ if __name__ == "__main__":
     bot.loop = loop
     bot.db.pool = pool
     bot.logger = logger
-    bot.coc_client = coc.login(settings['supercell']['user'], settings['supercell']['pass'], key_names=coc_names)
+    bot.coc_client = coc.login(settings['supercell']['user'],
+                               settings['supercell']['pass'],
+                               client=coc.EventsClient,
+                               key_names=coc_names)
 
     for extension in initialExtensions:
         try:
