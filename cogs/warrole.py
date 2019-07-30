@@ -8,13 +8,15 @@ class WarSetup(commands.Cog):
     """Commands to be run during war"""
     def __init__(self, bot):
         self.bot = bot
-        self.coc = bot.coc_client
-        self.coc.add_events(self.on_war_state_change)
-        asyncio.ensure_future(self.coc.add_war_update("#CVCJR89"), loop=self.bot.loop)
-        self.coc.start_updates("war")
+        self.bot.coc_client.add_events(self.on_war_state_change)
+        asyncio.ensure_future(self.assign_clans())
+        self.bot.coc_client.start_updates("war")
 
     def cog_unload(self):
-        self.coc.stop_updates("war")
+        self.bot.coc_client.stop_updates("war")
+
+    async def assign_clans(self):
+        await self.bot.coc_client.add_war_update("#CVCJR89")
 
     @property
     def elder_channel(self):
@@ -25,7 +27,7 @@ class WarSetup(commands.Cog):
         conn = self.bot.db.pool
         guild = self.bot.get_guild(settings['discord']['oakGuildId'])
         war_role = guild.get_role(settings['oakRoles']['inwar'])
-        if war.state == "preparation":
+        if current_state == "preparation":
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
@@ -57,7 +59,7 @@ class WarSetup(commands.Cog):
                     self.bot.logger.warning("No players found in names list")
             except:
                 self.bot.logger.exception("Send Embed")
-        elif war.state == "inWar":
+        elif current_state == "inWar":
             members = war_role.members
             if not members:
                 player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]

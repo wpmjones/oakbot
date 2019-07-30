@@ -90,8 +90,8 @@ class Elder(commands.Cog):
                     try:
                         player_tag = members[[member.name for member in members].index(player_input)].tag[1:]
                     except:
-                        await self.bot.test_channel.send(f"{player_input} is not valid for the war add command."
-                                                         f"Attempted by {ctx.author} in {ctx.channel}.")
+                        self.bot.logger.info(f"{player_input} is not valid for the war add command."
+                                             f"Attempted by {ctx.author} in {ctx.channel}.")
                         return
             await self.bot.db.link_user(player_tag, str(user.id))
             self.bot.logger.debug(f"Discord ID successfully added to db for {player_input}.")
@@ -99,8 +99,8 @@ class Elder(commands.Cog):
     @war.error
     async def war_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
-            await self.bot.test_channel.send(f"{ctx.author} issued the /war command, but there was a problem "
-                                             f"with the Discord user.")
+            self.bot.logger.warning(f"{ctx.author} issued the /war command, but there was a problem "
+                                    f"with the Discord user.")
 
     @commands.command(name="giphy", hidden=True)
     async def giphy(self, ctx, gif_text):
