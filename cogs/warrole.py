@@ -8,18 +8,12 @@ class WarSetup(commands.Cog):
     """Commands to be run during war"""
     def __init__(self, bot):
         self.bot = bot
-        asyncio.ensure_future(self.assign_clans())
+        self.bot.coc_client.add_war_update("#CVCJR89")
         self.bot.coc_client.add_events(self.on_war_state_change)
         self.bot.coc_client.start_updates("war")
 
     def cog_unload(self):
         self.bot.coc_client.stop_updates("war")
-
-    async def assign_clans(self):
-        try:
-            self.bot.coc_client.add_war_update("#CVCJR89")
-        except:
-            self.bot.logger.exception("Failed to assign clans")
 
     @property
     def elder_channel(self):
