@@ -223,6 +223,7 @@ class Elder(commands.Cog):
         /warn "Professor Mahon" This is another warning
         To remove a warning, request the list first to obtain the warning ID.
         /warn remove #"""
+        # TODO Fix it so that apostrophes in the warning don't cause an error
         if authorized(ctx.author.roles):
             conn = pymssql.connect(settings['database']['server'],
                                    settings['database']['username'],
@@ -286,6 +287,7 @@ class Elder(commands.Cog):
                                             f"removed for **{fetched['playerName']}**.")
             else:
                 warning = " ".join(warning)
+                warning.replace("'", "''")
                 cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = '{player}'")
                 fetched = cursor.fetchone()
                 if fetched is not None:
