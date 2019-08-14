@@ -49,7 +49,10 @@ def send_log(message):
 
 
 async def send_message(message):
-    await bot.get_channel(settings['logChannels']['oak']).send(f"`{message}`")
+    if len(message) < 2000:
+        await bot.get_channel(settings['logChannels']['oak']).send(f"`{message}`")
+    else:
+        await bot.get_channel(settings['logChannels']['oak']).send(f"`{message[:1950]}`")
 
 logger.add("oakbot.log", rotation="100MB", level=log_level)
 
