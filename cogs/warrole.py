@@ -17,7 +17,7 @@ class WarSetup(commands.Cog):
 
     async def assign_clans(self):
         try:
-            await self.bot.coc_client.add_war_update("#CVCJR89")
+            self.bot.coc_client.add_war_update("#CVCJR89")
         except:
             self.bot.logger.exception("Failed to assign clans")
 
