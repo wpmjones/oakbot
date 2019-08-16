@@ -213,7 +213,7 @@ class Elder(commands.Cog):
                                     f"Request: {player} was {ctx.command}ed for {reason}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
-    @commands.command(name="warn", aliases=["warning", "watch", "watchlist"], hidden=True)
+    @commands.command(name="warn", aliases=["warning", "warnings", "watch", "watchlist"], hidden=True)
     async def warn(self, ctx, player: str = "list", *warning):
         """Command to add warnings for players
         /warn list (or just /warn) will show a list of all warnings
