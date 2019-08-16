@@ -17,7 +17,7 @@ class WarSetup(commands.Cog):
 
     @property
     def elder_channel(self):
-        return self.bot.get_channel(settings['oakChannels']['elder'])
+        return self.bot.get_channel(settings['oakChannels']['elderChat'])
 
     async def on_war_state_change(self, current_state, war):
         """ Assign inWar role to those participating in the current war """
