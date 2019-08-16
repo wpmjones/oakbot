@@ -21,10 +21,10 @@ class WarSetup(commands.Cog):
 
     async def on_war_state_change(self, current_state, war):
         """ Assign inWar role to those participating in the current war """
+        self.bot.logger.debug(f"Current State: {current_state}\nWar State: {war.state}")
         conn = self.bot.db.pool
         guild = self.bot.get_guild(settings['discord']['oakGuildId'])
         war_role = guild.get_role(settings['oakRoles']['inwar'])
-        self.bot.logger.debug("Before if statement")
         if current_state == "preparation":
             self.bot.logger.debug("War state changed to preparation")
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
