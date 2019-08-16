@@ -134,7 +134,7 @@ class WarSetup(commands.Cog):
                                               f"Player Tag: {row['player_tag']}\n"
                                               f"Discord ID: {row['discord_id']}\n")
                         continue
-                    await user.add_roles(war_role, reason="Auto add role for war.")
+                    await user.add_roles(war_role, reason="Command - Add role for war.")
                     names.append(user.display_name)
             except:
                 self.bot.logger.exception("Add roles")
@@ -147,7 +147,7 @@ class WarSetup(commands.Cog):
                     embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
                     await msg.delete()
                     await ctx.send(embed=embed)
-                    self.bot.logger.info("inWar role added automatically")
+                    self.bot.logger.info("inWar role added via command")
                 else:
                     self.bot.logger.warning("No players found in names list")
             except:
@@ -159,12 +159,12 @@ class WarSetup(commands.Cog):
             members = war_role.members
             try:
                 for user in members:
-                    await user.remove_roles(war_role, reason="Auto remove role after end of war.")
+                    await user.remove_roles(war_role, reason="Command - Remove role after end of war.")
             except:
                 self.bot.logger.exception("War Roles")
             await msg.delete()
             await ctx.send("inWar roles removed for all players.")
-            self.bot.logger.info("inWar role removed automatically")
+            self.bot.logger.info("inWar role removed via command")
 
 
 def is_discord_user(guild, discord_id):
