@@ -213,7 +213,7 @@ class Elder(commands.Cog):
                                     f"Request: {player} was {ctx.command}ed for {reason}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
-    @commands.command(name="warn", aliases=["warning", "watch", "watchlist"], hidden=True)
+    @commands.command(name="warn", aliases=["warning", "warnings", "watch", "watchlist"], hidden=True)
     async def warn(self, ctx, player: str = "list", *warning):
         """Command to add warnings for players
         /warn list (or just /warn) will show a list of all warnings
@@ -330,20 +330,20 @@ class Elder(commands.Cog):
             self.bot.logger.debug("Clan retrieved")
             warn_text = (f"**We are {season.get_days_since()} days into a {season.get_season_length()} day season.\n"
                          f"These statistics are based on what players should have this far into the season.**\n\n"
-                         f"*TH8 or below*\n")
+                         f"*TH9 or below*\n")
             low_text = high_text = ""
             async for player in clan.get_detailed_members():
                 self.bot.logger.debug(f"Evaluating {player.name}")
                 if player.tag == "#Y29CGU0Q":  # Skip Connie
                     continue
-                if player.town_hall <= 8 and player.attack_wins < attacks_needed:
+                if player.town_hall <= 9 and player.attack_wins < attacks_needed:
                     low_text += (f"{player.name}{th_superscript(player.town_hall)} "
                                  f"is below {attacks_needed} attack wins ({player.attack_wins}).\n")
-                elif player.town_hall >= 9 and player.donations < donates_needed:
+                elif player.town_hall >= 10 and player.donations < donates_needed:
                     high_text += (f"{player.name}{th_superscript(player.town_hall)} "
                                   f"is below {donates_needed} donations ({player.donations}).\n")
             warn_text += low_text
-            warn_text += "\n\n*TH9 or above*\n"
+            warn_text += "\n\n*TH10 or above*\n"
             warn_text += high_text
             await msg.edit(content=warn_text)
         else:

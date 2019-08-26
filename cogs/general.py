@@ -21,9 +21,6 @@ class General(commands.Cog):
             await message.channel.send("Reddit Oak rules can be found here - "
                                        "https://www.reddit.com/r/CoC_RedditOak/wiki/moderation/general_rules")
             return
-        if "!invite" in message.content:
-            await message.channel.send("https://discord.me/redditoak")
-            return
         if any(word in message.content for word in ["signup", "sign-up", "sign up"]):
             await message.channel.send(f"Please use `/war c#` or `/war call #` to call targets in "
                                        f"<#{str(settings['oakChannels']['cocChat'])}> or "
@@ -267,6 +264,14 @@ class General(commands.Cog):
         content += "\n".join(donors)
         await ctx.send(embed=embed)
         await ctx.send(content)
+
+    @commands.command(name="nickname")
+    async def nickname(self, ctx):
+        await ctx.send("https://www.techuntold.com/change-nickname-discord/")
+
+    @commands.command(name="invite")
+    async def invite(self, ctx):
+        await ctx.send("https://discord.me/redditoak")
 
 
 def is_discord_user(guild, discord_id):
