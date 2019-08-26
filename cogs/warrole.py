@@ -121,10 +121,12 @@ class WarSetup(commands.Cog):
             msg = await ctx.send("Adding roles. One moment...")
             war_role = guild.get_role(int(settings['oakRoles']['inwar']))
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
+            self.bot.logger.debug(player_tags)
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
                    f"WHERE player_tag = ANY($1)")
             rows = await conn.fetch(sql, player_tags)
+            self.bot.logger.debug("Retreived Discord IDs for members in war.")
             names = []
             try:
                 for row in rows:
@@ -138,6 +140,7 @@ class WarSetup(commands.Cog):
                     names.append(user.display_name)
             except:
                 self.bot.logger.exception("Add roles")
+            self.bot.logger.debug("Roles added. Going to create the embed now.")
             try:
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
