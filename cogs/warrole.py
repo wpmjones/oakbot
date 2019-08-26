@@ -124,9 +124,10 @@ class WarSetup(commands.Cog):
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
                    f"WHERE player_tag = ANY($1)")
-            self.bot.logger.debug(sql)
-            rows = await conn.fetch(sql, player_tags)
-            self.bot.logger.debug("Retreived Discord IDs for members in war.")
+            try:
+                rows = await conn.fetch(sql, player_tags)
+            except:
+                self.bot.logger.exception("failed fetch")
             names = []
             try:
                 for row in rows:
