@@ -3,6 +3,7 @@ import git
 import os
 import coc
 import asyncio
+import discord
 from loguru import logger
 from discord.ext import commands
 from config import settings
@@ -41,6 +42,8 @@ async def on_ready():
     bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
     logger.add(send_log, level="DEBUG")
     logger.info("The Arborist is now planting trees")
+    activity = discord.Game(" with fertilizer")
+    await bot.change_presence(activity=activity)
     await bot.test_channel.send("The Arborist is now planting trees")
 
 
