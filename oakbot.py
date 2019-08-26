@@ -15,6 +15,11 @@ if enviro == "LIVE":
     prefix = "/"
     log_level = "INFO"
     coc_names = "vps"
+elif enviro == "work":
+    token = settings['discord']['testToken']
+    prefix = ">"
+    log_level = "DEBUG"
+    coc_names = "work"
 else:
     token = settings['discord']['testToken']
     prefix = ">"
