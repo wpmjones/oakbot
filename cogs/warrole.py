@@ -124,11 +124,7 @@ class WarSetup(commands.Cog):
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
                    f"WHERE player_tag = ANY($1)")
-            try:
-                rows = await conn.fetch(sql, player_tags)
-            except:
-                self.bot.logger.exception("failed fetch")
-                return ctx.send("command failed during fetch")
+            rows = await conn.fetch(sql, player_tags)
             names = []
             try:
                 for row in rows:
@@ -142,7 +138,6 @@ class WarSetup(commands.Cog):
                     names.append(user.display_name)
             except:
                 self.bot.logger.exception("Add roles")
-            self.bot.logger.debug("Roles added. Going to create the embed now.")
             try:
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
