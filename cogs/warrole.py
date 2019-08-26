@@ -128,6 +128,7 @@ class WarSetup(commands.Cog):
                 rows = await conn.fetch(sql, player_tags)
             except:
                 self.bot.logger.exception("failed fetch")
+                return ctx.send("command failed during fetch")
             names = []
             try:
                 for row in rows:
