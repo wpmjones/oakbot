@@ -30,8 +30,8 @@ class DateConverter(commands.Converter):
 
         # Check for text based month with month first (optional comma)
         pattern = (r'(?P<Month>Jan(uary)?|Feb(ruary)?|Mar(ch)?|Apr(il)?|May|Jun(e)?|'
-                   r'Jul(y)?|Aug(ust)?|Sep(tember)?|Sept|Oct(ober)?|Nov(ember)?|Dec(ember)?)[\s ]+'
-                   r'(?P<Date>\d+),?[\s ]+'
+                   r'Jul(y)?|Aug(ust)?|Sep(tember)?|Sept|Oct(ober)?|Nov(ember)?|Dec(ember)?)[\s ]?'
+                   r'(?P<Date>\d{1,2}),?[\s ]?'
                    r'(?P<Year>' + year_options + ')')
         match = re.match(pattern, argument, re.IGNORECASE)
         if match:
@@ -66,7 +66,6 @@ class DateConverter(commands.Converter):
 
         # Check for dates with year at the end
         pattern = r'(\d{1,2})[/ -.]?(\d{1,2})[/ -.]?(?P<Year>' + year_options + ')'
-        logger.debug(pattern)
         match = re.match(pattern, argument, re.IGNORECASE)
         if match:
             if match.group(1) == match.group(2):
@@ -78,11 +77,9 @@ class DateConverter(commands.Converter):
                 month = match.group(1)
                 date = match.group(2)
             year = match.group('Year')
-            logger.debug(year)
 
         # Check for dates with year at the beginning (then assume MM-DD)
         pattern = r'(?P<Year>' + year_options + r')[/ -.]?(?P<Month>\d{1,2})[/ -.]?(?P<Date>\d{1,2})'
-        logger.debug(pattern)
         match = re.match(pattern, argument, re.IGNORECASE)
         if match:
             date = match.group('Date')
