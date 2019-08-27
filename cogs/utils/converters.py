@@ -46,8 +46,27 @@ class DateConverter(commands.Converter):
                 raise commands.BadArgument(
                     'You may think that\'s a date, but I don\'t. Try using the YYYY-MM-DD format.')
 
+        # Check for text based month with month last
+        pattern = (r'(?P<Year>' + year_options + r')[\s ]+'
+                   r'(?P<Date>\d+),?[\s ]+'
+                   r'(?P<Month>Jan(uary)?|Feb(ruary)?|Mar(ch)?|Apr(il)?|May|Jun(e)?|'
+                   r'Jul(y)?|Aug(ust)?|Sep(tember)?|Sept|Oct(ober)?|Nov(ember)?|Dec(ember)?)')
+        match = re.match(pattern, argument, re.IGNORECASE)
+        if match:
+            date_string = f"{match.group('Year')} {match.group('Month')[:3]} {match.group('Date')}"
+            try:
+                if len(match.group('Year')) == 2:
+                    return datetime.strptime(date_string, '%y %b %d')
+                else:
+                    return datetime.strptime(date_string, '%Y %b %d')
+            except ValueError:
+                logger.error(f"{ctx.author} provided {argument}")
+                raise commands.BadArgument(
+                    'You may think that\'s a date, but I don\'t. Try using the YYYY-MM-DD format.')
+
         # Check for dates with year at the end
         pattern = r'(\d{1,2})[/ -.]?(\d{1,2})[/ -.]?(?P<Year>' + year_options + ')'
+        logger.debug(pattern)
         match = re.match(pattern, argument, re.IGNORECASE)
         if match:
             if match.group(1) == match.group(2):
@@ -59,9 +78,11 @@ class DateConverter(commands.Converter):
                 month = match.group(1)
                 date = match.group(2)
             year = match.group('Year')
+            logger.debug(year)
 
         # Check for dates with year at the beginning (then assume MM-DD)
         pattern = r'(?P<Year>' + year_options + r')[/ -.]?(?P<Month>\d{1,2})[/ -.]?(?P<Date>\d{1,2})'
+        logger.debug(pattern)
         match = re.match(pattern, argument, re.IGNORECASE)
         if match:
             date = match.group('Date')
@@ -70,7 +91,10 @@ class DateConverter(commands.Converter):
 
         try:
             date_string = f"{year} {month} {date}"
-            return datetime.strptime(date_string, '%Y %m %d')
+            if len(year) == 2:
+                return datetime.strptime(date_string, '%y %m %d')
+            else:
+                return datetime.strptime(date_string, '%Y %m %d')
         except (ValueError, NameError):
             logger.error(f"{ctx.author} provided {argument}")
             raise commands.BadArgument(

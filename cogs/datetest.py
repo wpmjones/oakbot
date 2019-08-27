@@ -7,6 +7,12 @@ class DateTest(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def cog_command_error(self, ctx, error):
+        error = getattr(error, 'original', error)
+
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(str(error))
+
     @commands.command(name="dt")
     async def new_date(self, ctx, *, dt: DateConverter):
         await ctx.send(f"The provided date was converted to {dt}")
