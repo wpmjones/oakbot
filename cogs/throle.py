@@ -32,10 +32,17 @@ class ThRoles(commands.Cog):
     @commands.command(name="add_th_roles")
     async def add_roles(self, ctx):
         conn = self.bot.db.pool
-        sql = "SELECT discord_ID, '#' || player_tag as player_tag FROM rcs_discord_links"
+        sql = "SELECT discord_id, '#' || player_tag as player_tag FROM rcs_discord_links"
         rows = await conn.fetch(sql)
         for player in rows:
+            member = await self.bot.coc_client.get_player(player["player_tag"])
+            user = await self.bot.get_user(player["discord_id"])
+            new_role = await self.get_th_role(member.town_hall)
+            await user.add_roles(new_role, reason="Auto assign from command")
 
+    async def get_th_role(self, th_level):
+        role_id = settings["oakRoles"][f"TH{th_level}"]
+        return await self.guild.get_role(role_id=role_id)
 
 
 def setup(bot):
