@@ -39,6 +39,8 @@ class ThRoles(commands.Cog):
             user = await self.bot.get_user(player["discord_id"])
             new_role = await self.get_th_role(member.town_hall)
             await user.add_roles(new_role, reason="Auto assign from command")
+            self.bot.logger.debug(f"TH{member.town_hall} role added for {member.name}")
+        await ctx.send("Town hall roles added. Bam!")
 
     async def get_th_role(self, th_level):
         role_id = settings["oakRoles"][f"TH{th_level}"]
