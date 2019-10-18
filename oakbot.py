@@ -68,6 +68,7 @@ initialExtensions = ["cogs.general",
                      "cogs.members",
                      "cogs.elder",
                      "cogs.owner",
+                     "cogs.admin",
                      "cogs.warrole",
                      ]
 
@@ -83,7 +84,8 @@ if __name__ == "__main__":
     bot.coc_client = coc.login(settings['supercell']['user'],
                                settings['supercell']['pass'],
                                client=coc.EventsClient,
-                               key_names=coc_names)
+                               key_names=coc_names,
+                               correct_tags=True)
 
     for extension in initialExtensions:
         try:
