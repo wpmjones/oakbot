@@ -16,12 +16,13 @@ class ThRoles(commands.Cog):
         await ctx.send("Updates started.")
 
     async def on_player_townhall_upgrade(self, old_th, new_th, player):
+        self.bot.logger.info(f"{player} from {old_th} to {new_th}")
         conn = self.bot.db.pool
         coc_chat = self.bot.get_channel(settings["oakChannels"]["cocChat"])
         sql = "SELECT discord_id FROM rcs_discord_links WHERE player_tag = $1"
         row = await conn.fetchrow(sql, player.tag[1:])
         discord_id = row["discord_id"]
-        user = await self.bot.get_user(discord_id)
+        user = self.guild.get_member(discord_id)
         msg = f"Congratulations to <@{user.mention} on upgrading to Town Hall {new_th}!"
         await coc_chat.send(msg)
         old_role = await self.guild.get_role(settings["oakRoles"][f"TH{old_th}"])
@@ -36,7 +37,11 @@ class ThRoles(commands.Cog):
         rows = await conn.fetch(sql)
         for player in rows:
             member = await self.bot.coc_client.get_player(player["player_tag"])
-            user = await self.bot.get_user(player["discord_id"])
+            if member.clan and member.clan.tag != "#CVCJR89":
+                continue
+            user = self.guild.get_member(player["discord_id"])
+            if not user:
+                continue
             new_role = await self.get_th_role(member.town_hall)
             await user.add_roles(new_role, reason="Auto assign from command")
             self.bot.logger.debug(f"TH{member.town_hall} role added for {member.name}")
@@ -44,7 +49,7 @@ class ThRoles(commands.Cog):
 
     async def get_th_role(self, th_level):
         role_id = settings["oakRoles"][f"TH{th_level}"]
-        return await self.guild.get_role(role_id=role_id)
+        return self.guild.get_role(role_id=role_id)
 
 
 def setup(bot):
