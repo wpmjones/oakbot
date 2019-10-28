@@ -4,12 +4,13 @@ import os
 import coc
 import asyncio
 import discord
-from loguru import logger
-from discord.ext import commands
-from config import settings
-from oakdb import OakDB
 
-enviro = "LIVE"
+from discord.ext import commands
+from oakdb import OakDB
+from loguru import logger
+from config import settings
+
+enviro = "dev"
 
 if enviro == "LIVE":
     token = settings['discord']['oakbotToken']
@@ -40,7 +41,6 @@ async def on_ready():
     logger.info(f"Logged in as {bot.user}")
     logger.info("-------")
     bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
-    logger.add(send_log, level="DEBUG")
     logger.info("The Arborist is now planting trees")
     activity = discord.Game(" with fertilizer")
     await bot.change_presence(activity=activity)
@@ -62,7 +62,10 @@ async def send_message(message):
     else:
         await bot.get_channel(settings['logChannels']['oak']).send(f"`{message[:1950]}`")
 
-logger.add("oakbot.log", rotation="100MB", level=log_level)
+
+async def after_ready():
+    await bot.wait_until_ready()
+    logger.add(send_log, level=log_level)
 
 initialExtensions = ["cogs.general",
                      "cogs.members",
@@ -78,6 +81,7 @@ if __name__ == "__main__":
     bot.db = OakDB(bot)
     loop = asyncio.get_event_loop()
     pool = loop.run_until_complete(bot.db.create_pool())
+    loop.create_task(after_ready())
     bot.loop = loop
     bot.db.pool = pool
     bot.logger = logger

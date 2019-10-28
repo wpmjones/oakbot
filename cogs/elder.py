@@ -3,12 +3,14 @@ import pymssql
 import requests
 import asyncio
 import season
+
 from discord.ext import commands
+from cogs.utils.db import Sql
 from datetime import datetime, timedelta
-from config import settings, color_pick, emojis
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
+from config import settings, color_pick, emojis
 
 
 class Elder(commands.Cog):
@@ -153,14 +155,9 @@ class Elder(commands.Cog):
                 ban = 1
             else:
                 ban = 0
-            conn = pymssql.connect(settings['database']['server'],
-                                   settings['database']['username'],
-                                   settings['database']['password'],
-                                   settings['database']['database'])
-            cursor = conn.cursor(as_dict=True)
-            cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = '{player}'")
-            fetched = cursor.fetchone()
-            conn.close()
+            with Sql(as_dict=True) as cursor:
+                cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = '{player}'")
+                fetched = cursor.fetchone()
             if fetched is not None:
                 discord_id = fetched['slackId']
                 if reason is not None:
@@ -225,93 +222,87 @@ class Elder(commands.Cog):
         /warn remove #"""
         # TODO Fix it so that apostrophes in the warning don't cause an error
         if authorized(ctx.author.roles):
-            conn = pymssql.connect(settings['database']['server'],
-                                   settings['database']['username'],
-                                   settings['database']['password'],
-                                   settings['database']['database'],
-                                   autocommit=True)
-            cursor = conn.cursor(as_dict=True)
-            if player == "list" or player is None:
-                cursor.execute("SELECT * FROM coc_oak_warnList ORDER BY playerName, strikeNum")
-                strikes = cursor.fetchall()
-                embed = discord.Embed(title="Reddit Oak Watchlist", 
-                                      description="All warnings expire after 60 days.", 
-                                      color=color_pick(181, 0, 0))
-                for strike in strikes:
-                    strike_emoji = ":x:" * strike['strikeNum']
-                    strike_text = (f"{strike['warning']}\nIssued on: {strike['warnDate']}\nWarning ID: "
-                                   f"{str(strike['warningId'])}")
-                    embed.add_field(name=f"{strike['playerName']} {strike_emoji}", value=strike_text, inline=False)
-                embed.set_footer(icon_url=("https://openclipart.org/image/300px/svg_to_png/109/"
-                                           "molumen-red-round-error-warning-icon.png"), 
-                                 text="To remove a strike, use /warn remove <Warning ID>")
-                self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: List warnings")
-                await ctx.send(embed=embed)
-                return
-            elif player == "remove":
-                reactions = [emojis['other']['upvote'], emojis['other']['downvote']]
-                cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE warningId = {warning[0]}")
-                fetched = cursor.fetchone()
-                if fetched is None:
-                    await ctx.send("No warning exists with that ID.  Please check the ID and try again.")
+            with Sql(as_dict=True) as cursor:
+                if player == "list" or player is None:
+                    cursor.execute("SELECT * FROM coc_oak_warnList ORDER BY playerName, strikeNum")
+                    strikes = cursor.fetchall()
+                    embed = discord.Embed(title="Reddit Oak Watchlist",
+                                          description="All warnings expire after 60 days.",
+                                          color=color_pick(181, 0, 0))
+                    for strike in strikes:
+                        strike_emoji = ":x:" * strike['strikeNum']
+                        strike_text = (f"{strike['warning']}\nIssued on: {strike['warnDate']}\nWarning ID: "
+                                       f"{str(strike['warningId'])}")
+                        embed.add_field(name=f"{strike['playerName']} {strike_emoji}", value=strike_text, inline=False)
+                    embed.set_footer(icon_url=("https://openclipart.org/image/300px/svg_to_png/109/"
+                                               "molumen-red-round-error-warning-icon.png"),
+                                     text="To remove a strike, use /warn remove <Warning ID>")
+                    self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: List warnings")
+                    await ctx.send(embed=embed)
                     return
-                sent_msg = await ctx.send(f"Are you sure you want to remove {fetched['warning']} "
-                                          f"from {fetched['playerName']}?")
-                await sent_msg.add_reaction(reactions[0][2:-1])
-                await sent_msg.add_reaction(reactions[1][2:-1])
+                elif player == "remove":
+                    reactions = [emojis['other']['upvote'], emojis['other']['downvote']]
+                    cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE warningId = {warning[0]}")
+                    fetched = cursor.fetchone()
+                    if fetched is None:
+                        await ctx.send("No warning exists with that ID.  Please check the ID and try again.")
+                        return
+                    sent_msg = await ctx.send(f"Are you sure you want to remove {fetched['warning']} "
+                                              f"from {fetched['playerName']}?")
+                    await sent_msg.add_reaction(reactions[0][2:-1])
+                    await sent_msg.add_reaction(reactions[1][2:-1])
 
-                def check(reaction, user):
-                    return user == ctx.message.author and str(reaction.emoji) in reactions
+                    def check(reaction, user):
+                        return user == ctx.message.author and str(reaction.emoji) in reactions
 
-                try:
-                    reaction, user = await ctx.bot.wait_for("reaction_add", timeout=60.0, check=check)
-                    self.bot.logger.debug(f"Awaited reaction {reaction} with user {user}")
-                except asyncio.TimeoutError:
-                    await sent_msg.edit(content="Removal cancelled because I'm feeling ignored. Don't ask me "
-                                                "to do things then ignore my questions.")
-                await sent_msg.clear_reactions()
-                if str(reaction.emoji) == reactions[1]:
-                    await sent_msg.edit(content="Removal cancelled.  Maybe try again later if you feel up to it.")
-                    return
-                elif str(reaction.emoji) == reactions[0]:
-                    await sent_msg.edit(content="Removal in progress...")
-                else:
-                    await sent_msg.edit(content="Something has gone horribly wrong and you're going to "
-                                                "have to talk to <@251150854571163648> about it. "
-                                                "Sorry. :frowning2: ")
-                    return
-                cursor.execute(f"DELETE FROM coc_oak_warnings WHERE warningId = {warning[0]}")
-                self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                      f"Request: Removal of {fetched['warning']} for {fetched['playerName']}")
-                await sent_msg.edit(content=f"Warning **{fetched['warning']}** "
-                                            f"removed for **{fetched['playerName']}**.")
-            else:
-                warning = " ".join(warning)
-                warning.replace("'", "''")
-                cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = '{player}'")
-                fetched = cursor.fetchone()
-                if fetched is not None:
-                    cursor.execute(f"INSERT INTO coc_oak_warnings (tag, warnDate, warning) "
-                                   f"VALUES ('{fetched['tag']}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
-                                   f"'{warning}')")
-                    cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = '{player}'")
-                    strike_list = cursor.fetchall()
-                    member = ctx.guild.get_member(int(fetched['slackId']))
-                    await ctx.send("Warning added for " + player)
-                    await member.send("Warning added!")
-                    emoji = ":x:"
-                    for strike in strike_list:
-                        await ctx.send(emoji + " " + strike['warnDate'] + " - " + strike['warning'])
-                        await member.send(f"{emoji} {strike['warnDate']} - {strike['warning']}")
-                        emoji += ":x:"
+                    try:
+                        reaction, user = await ctx.bot.wait_for("reaction_add", timeout=60.0, check=check)
+                        self.bot.logger.debug(f"Awaited reaction {reaction} with user {user}")
+                    except asyncio.TimeoutError:
+                        await sent_msg.edit(content="Removal cancelled because I'm feeling ignored. Don't ask me "
+                                                    "to do things then ignore my questions.")
+                    await sent_msg.clear_reactions()
+                    if str(reaction.emoji) == reactions[1]:
+                        await sent_msg.edit(content="Removal cancelled.  Maybe try again later if you feel up to it.")
+                        return
+                    elif str(reaction.emoji) == reactions[0]:
+                        await sent_msg.edit(content="Removal in progress...")
+                    else:
+                        await sent_msg.edit(content="Something has gone horribly wrong and you're going to "
+                                                    "have to talk to <@251150854571163648> about it. "
+                                                    "Sorry. :frowning2: ")
+                        return
+                    cursor.execute(f"DELETE FROM coc_oak_warnings WHERE warningId = {warning[0]}")
                     self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                          f"Request: {player} warned for {warning}")
+                                          f"Request: Removal of {fetched['warning']} for {fetched['playerName']}")
+                    await sent_msg.edit(content=f"Warning **{fetched['warning']}** "
+                                                f"removed for **{fetched['playerName']}**.")
                 else:
-                    self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                            f"Problem: {player} not found in SQL database | Warning: {warning}")
-                    await ctx.send("You have provided an invalid player name.  Please try again.")
-                    return
-                conn.close()
+                    warning = " ".join(warning)
+                    warning.replace("'", "''")
+                    cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = '{player}'")
+                    fetched = cursor.fetchone()
+                    if fetched is not None:
+                        cursor.execute(f"INSERT INTO coc_oak_warnings (tag, warnDate, warning) "
+                                       f"VALUES ('{fetched['tag']}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
+                                       f"'{warning}')")
+                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = '{player}'")
+                        strike_list = cursor.fetchall()
+                        member = ctx.guild.get_member(int(fetched['slackId']))
+                        await ctx.send("Warning added for " + player)
+                        await member.send("Warning added!")
+                        emoji = ":x:"
+                        for strike in strike_list:
+                            await ctx.send(emoji + " " + strike['warnDate'] + " - " + strike['warning'])
+                            await member.send(f"{emoji} {strike['warnDate']} - {strike['warning']}")
+                            emoji += ":x:"
+                        self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                              f"Request: {player} warned for {warning}")
+                    else:
+                        self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                                f"Problem: {player} not found in SQL database | Warning: {warning}")
+                        await ctx.send("You have provided an invalid player name.  Please try again.")
+                        return
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
