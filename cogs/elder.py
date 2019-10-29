@@ -415,7 +415,6 @@ class Elder(commands.Cog):
                                     f"Request: Presence = {msg}")
             await ctx.send("Wait one cotton pickin' minute jackrabbit! That command is not for you!")
 
-
 def authorized(user_roles):
     for role in user_roles:
         if role.id in [settings['oakRoles']['elder'],
