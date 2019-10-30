@@ -1,5 +1,4 @@
 import discord
-import pymssql
 import requests
 import asyncio
 import season
