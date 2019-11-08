@@ -1,5 +1,5 @@
 pymssql
-coc.py>=0.2.1
+coc.py>=0.3.0
 asyncpg
 loguru
 discord.py

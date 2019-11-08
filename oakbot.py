@@ -47,11 +47,6 @@ async def on_ready():
     await bot.test_channel.send("The Arborist is now planting trees")
 
 
-@bot.event
-async def on_resumed():
-    logger.info('resumed...')
-
-
 def send_log(message):
     asyncio.ensure_future(send_message(message))
 
