@@ -10,7 +10,7 @@ from oakdb import OakDB
 from loguru import logger
 from config import settings
 
-enviro = "dev"
+enviro = "LIVE"
 
 if enviro == "LIVE":
     token = settings['discord']['oakbotToken']
@@ -45,11 +45,6 @@ async def on_ready():
     activity = discord.Game(" with fertilizer")
     await bot.change_presence(activity=activity)
     await bot.test_channel.send("The Arborist is now planting trees")
-
-
-@bot.event
-async def on_resumed():
-    logger.info('resumed...')
 
 
 def send_log(message):
