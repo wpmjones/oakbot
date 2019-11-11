@@ -8,6 +8,13 @@ class OwnerCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.command(name="clear", hidden=True)
+    @commands.is_owner()
+    async def clear(self, ctx, num_msgs):
+        async for message in ctx.channel.history(limit=num_msgs):
+            await message.delete()
+        await ctx.send(f"{num_msgs} message(s) deleted", delete_after=10)
+
     @commands.command(name="pull", hidden=True)
     @commands.is_owner()
     async def git_pull(self, ctx):
@@ -28,20 +35,6 @@ class OwnerCog(commands.Cog):
         if self.bot.db.pool is not None:
             await self.bot.db.pool.close()
             await ctx.send("Database connection closed.")
-
-    @commands.command()
-    @commands.is_owner()
-    async def log(self, ctx, num_lines: int = 10):
-        with open(f"oakbot.log", "r") as f:
-            list_start = -1 * num_lines
-            await self.send_text(ctx.channel, "\n".join([line for line in f.read().splitlines()[list_start:]]))
-
-    @log.error
-    async def log_handler(self, ctx, error):
-        """Listens for errors in log command"""
-        tb_lines = traceback.format_exception(error.__class__, error, error.__traceback__)
-        tb_text = "".join(tb_lines)
-        self.bot.logger.exception(f"Exception found in {ctx.command}:\n{tb_text}")
 
     async def send_text(self, channel, text, block=None):
         """ Sends text ot channel, splitting if necessary """

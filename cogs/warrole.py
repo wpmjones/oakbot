@@ -1,4 +1,3 @@
-import asyncio
 import discord
 from discord.ext import commands
 from config import settings
@@ -35,12 +34,7 @@ class WarSetup(commands.Cog):
             names = []
             try:
                 for row in rows:
-                    is_user, user = is_discord_user(guild, int(row['discord_id']))
-                    if not is_user:
-                        self.bot.logger.error(f"Not a valid Discord ID\n"
-                                              f"Player Tag: {row['player_tag']}\n"
-                                              f"Discord ID: {row['discord_id']}\n")
-                        continue
+                    user = guild.get_member(int(row['discord_id']))
                     await user.add_roles(war_role, reason="Auto add role for war.")
                     names.append(user.display_name)
             except:
@@ -60,7 +54,7 @@ class WarSetup(commands.Cog):
                 self.bot.logger.exception("Send Embed")
         elif current_state == "inWar":
             self.bot.logger.debug("War state changed to in war")
-            # Remove all roles and re-add to compensate for
+            # Remove all roles and re-add to compensate for missed prep
             members = war_role.members
             try:
                 for user in members:
@@ -76,12 +70,7 @@ class WarSetup(commands.Cog):
             names = []
             try:
                 for row in rows:
-                    is_user, user = is_discord_user(guild, int(row['discord_id']))
-                    if not is_user:
-                        self.bot.logger.error(f"Not a valid Discord ID\n"
-                                              f"Player Tag: {row['player_tag']}\n"
-                                              f"Discord ID: {row['discord_id']}\n")
-                        continue
+                    user = guild.get_member(int(row['discord_id']))
                     await user.add_roles(war_role, reason="Auto add role for war.")
                     names.append(user.display_name)
             except:
@@ -128,12 +117,7 @@ class WarSetup(commands.Cog):
             names = []
             try:
                 for row in rows:
-                    is_user, user = is_discord_user(guild, int(row['discord_id']))
-                    if not is_user:
-                        self.bot.logger.error(f"Not a valid Discord ID\n"
-                                              f"Player Tag: {row['player_tag']}\n"
-                                              f"Discord ID: {row['discord_id']}\n")
-                        continue
+                    user = guild.get_member(int(row['discord_id']))
                     await user.add_roles(war_role, reason="Command - Add role for war.")
                     names.append(user.display_name)
             except:
@@ -165,17 +149,6 @@ class WarSetup(commands.Cog):
             await msg.delete()
             await ctx.send("inWar roles removed for all players.")
             self.bot.logger.info("inWar role removed via command")
-
-
-def is_discord_user(guild, discord_id):
-    try:
-        user = guild.get_member(discord_id)
-        if user is None:
-            return False, None
-        else:
-            return True, user
-    except:
-        return False, None
 
 
 def setup(bot):
