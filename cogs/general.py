@@ -1,5 +1,7 @@
 import discord
+
 from discord.ext import commands
+from cogs.utils.db import Sql
 from config import settings, emojis, color_pick
 
 
@@ -23,8 +25,8 @@ class General(commands.Cog):
             return
         if any(word in message.content for word in ["signup", "sign-up", "sign up"]):
             await message.channel.send(f"Please use `/war c#` or `/war call #` to call targets in "
-                                       f"<#{str(settings['oakChannels']['cocChat'])}> or "
-                                       f"<#{str(settings['oakChannels']['oakWar'])}>")
+                                       f"<#{str(settings['oak_channels']['coc_chat'])}> or "
+                                       f"<#{str(settings['oak_channels']['oak_war'])}>")
             return
         if "!th8" in message.content:
             await message.channel.send("https://photos.google.com/share/AF1QipPWoqacyT79PJJ4gL9P2hfHqWt_OkEFr-"
@@ -49,29 +51,26 @@ class General(commands.Cog):
                            f"command. Try /player TubaKid")
             return
         # pull non-in-game stats from db
-        conn = self.bot.db.pool
-        sql = (f"SELECT * FROM rcs_members WHERE clan_tag = 'CVCJR89' AND "
-               f"player_name = '{player_name}' AND "
-               f"time_stamp = (SELECT MAX(time_stamp) FROM rcs_members WHERE time_stamp < "
-               f"(SELECT MAX(time_stamp) FROM rcs_members))")
-        sql = f"SELECT * FROM oak_members WHERE player_name = '{player_name}'"
-        oak_stats = await conn.fetchrow(sql)
+        with Sql(as_dict=True) as cursor:
+            sql = (f"SELECT tag, numWars, avgStars, warStats, joinDate, slackId "
+                   f"FROM oak_members "
+                   f"WHERE player_name = %s")
+            oak_stats = cursor.fetchrow(sql, player_name)
         try:
-            if oak_stats is None:
+            if not oak_stats:
                 self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                        f"Problem: {player_name} not found in PostgreSQL database")
-                await ctx.send(f"{emojis['other']['redx']} The player you provided was not found in the database. "
-                               f"Please try again.")
-                return
+                                        f"Problem: {player_name} not found in SQL database")
+                return await ctx.send(f"{emojis['other']['redx']} The player you provided was not found in the "
+                                      f"database. Please try again.")
         except:
             self.bot.logger.error(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                   f"Unknown error has occurred")
-            await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. <@251150854571163648> "
-                           f"I was trying to look up {player_name} but the world conspired against me.")
-            return
+            return await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. "
+                                  f"<@251150854571163648> I was trying to look up {player_name} "
+                                  f"but the world conspired against me.")
         # retrieve player info from coc.py
         player_tag = f"#{oak_stats['player_tag']}"
-        player = await self.bot.coc_client.get_player(player_tag)
+        player = await self.bot.coc.get_player(player_tag)
         troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
         sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer"]
         count = 0
@@ -123,9 +122,9 @@ class General(commands.Cog):
         embed.add_field(name="War Stars", value=player.war_stars, inline=True)
         embed.add_field(name="Attack Wins", value=player.attack_wins, inline=True)
         embed.add_field(name="Defense Wins", value=player.defense_wins, inline=True)
-        embed.add_field(name="Wars in Oak", value=oak_stats['num_wars'], inline=True)
-        embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats['avg_stars'], 2)), inline=True)
-        embed.add_field(name="This Season", value=oak_stats['season_wars'], inline=False)
+        embed.add_field(name="Wars in Oak", value=oak_stats['numWars'], inline=True)
+        embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats['avgStars'], 2)), inline=True)
+        embed.add_field(name="This Season", value=oak_stats['warStats'], inline=False)
         embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
         if sm_levels != "":
             embed.add_field(name="Siege Machines", value=sm_levels, inline=False)
@@ -142,7 +141,7 @@ class General(commands.Cog):
         if builder_hero != "":
             embed.add_field(name="Hero", value=builder_hero, inline=False)
         embed.set_footer(icon_url="http://www.mayodev.com/images/coc/oakbadge.png",
-                         text=f"Member of Reddit Oak since {oak_stats['join_date'].strftime('%e %B, %Y')}")
+                         text=f"Member of Reddit Oak since {oak_stats['joinDate'].strftime('%e %B, %Y')}")
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                               f"Request complete: /player {player_name}")
         await ctx.send(embed=embed)
@@ -150,7 +149,7 @@ class General(commands.Cog):
     @commands.command(name="avatar", hidden=True)
     async def avatar(self, ctx, user: discord.Member):
         # convert discord mention to user id only
-        guild = ctx.bot.get_guild(settings['discord']['oakGuildId'])
+        guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
         embed = discord.Embed(color=discord.Color.blue())
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
         embed.set_image(url=user.avatar_url_as(size=128))
@@ -165,7 +164,7 @@ class General(commands.Cog):
 
     @commands.command(name="help", hidden=True)
     async def help(self, ctx, command: str = "all"):
-        """ Welcome to tThe Arborist"""
+        """ Welcome to The Arborist"""
         desc = """All commands must begin with a slash.
 
         You can type /help <command> to display only the help for that command."""
@@ -202,7 +201,7 @@ class General(commands.Cog):
 
     @commands.command(name="sheet")
     async def sheet(self, ctx):
-        await ctx.send(settings['google']['oaksheet'])
+        await ctx.send(settings['google']['oak_sheet'])
 
     @commands.command(name="siege", aliases=["sm"])
     async def siege_request(self, ctx, *, siege_req: str = "help"):
@@ -241,6 +240,11 @@ class General(commands.Cog):
                            "Please specify `ground`, `blimp`, or `slammer`")
             return
         sent_msg = await ctx.send(f"One moment while I check to see who has those.")
+        donors = []
+        clan = await self.bot.coc.get_clan("#CVCJR89")
+        async for player in clan.get_detailed_members(cache=True):
+            if siege_name in player.home_troops_dict.keys():
+                donors.append(f"{player.name}: ")
         conn = self.bot.db.pool
         # get all oak players
         sql = f"SELECT player_name, player_tag, discord_id, {siege_type} FROM oak_discord"

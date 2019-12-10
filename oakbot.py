@@ -1,29 +1,41 @@
 import traceback
 import git
 import os
+import sys
 import coc
 import asyncio
+import aiohttp
 import discord
 
 from discord.ext import commands
-from oakdb import OakDB
+from cogs.utils import context
+from cogs.utils.db import Psql
+from datetime import datetime
 from loguru import logger
 from config import settings
 
-enviro = "LIVE"
+enviro = "home"
+
+initial_extensions = ["cogs.general",
+                      "cogs.members",
+                      "cogs.elder",
+                      "cogs.owner",
+                      "cogs.admin",
+                      ]
 
 if enviro == "LIVE":
-    token = settings['discord']['oakbotToken']
+    token = settings['discord']['oakbot_token']
     prefix = "/"
     log_level = "INFO"
     coc_names = "vps"
-elif enviro == "work":
-    token = settings['discord']['testToken']
+    initial_extensions.extend("cogs.warrole")
+elif enviro == "home":
+    token = settings['discord']['test_token']
     prefix = ">"
     log_level = "DEBUG"
-    coc_names = "work"
+    coc_names = "ubuntu"
 else:
-    token = settings['discord']['testToken']
+    token = settings['discord']['test_token']
     prefix = ">"
     log_level = "DEBUG"
     coc_names = "dev"
@@ -32,66 +44,129 @@ description = """Welcome to The Arborist - by TubaKid
 
 All commands must begin with a slash"""
 
-bot = commands.Bot(command_prefix=prefix, description=description, case_insensitive=True)
+coc_client = coc.login(settings['supercell']['user'],
+                       settings['supercell']['pass'],
+                       client=coc.EventsClient,
+                       key_names=coc_names,
+                       correct_tags=True)
 
 
-@bot.event
-async def on_ready():
-    logger.info("-------")
-    logger.info(f"Logged in as {bot.user}")
-    logger.info("-------")
-    bot.test_channel = bot.get_channel(settings['oakChannels']['testChat'])
-    logger.info("The Arborist is now planting trees")
-    activity = discord.Game(" with fertilizer")
-    await bot.change_presence(activity=activity)
-    await bot.test_channel.send("The Arborist is now planting trees")
+class OakBot(commands.Bot):
+    def __init__(self):
+        super().__init__(command_prefix=prefix,
+                         description=description,
+                         case_insensitive=True)
+        self.remove_command("help")
+        self.coc = coc_client
+        self.logger = logger
+        self.session = aiohttp.ClientSession(loop=self.loop)
 
+        self.loop.create_task(self.after_ready())
+        coc_client.add_events(self.on_event_error)
 
-def send_log(message):
-    asyncio.ensure_future(send_message(message))
+        for extension in initial_extensions:
+            try:
+                self.load_extension(extension)
+                self.logger.debug(f"{extension} loaded successfully")
+            except Exception as extension:
+                self.logger.error(f"Failed to load extension {extension}.", file=sys.stderr)
+                traceback.print_exc()
 
+    @property
+    def log_channel(self):
+        return self.get_channel(settings['log_channels']['oak'])
 
-async def send_message(message):
-    if len(message) < 2000:
-        await bot.get_channel(settings['logChannels']['oak']).send(f"`{message}`")
-    else:
-        await bot.get_channel(settings['logChannels']['oak']).send(f"`{message[:1950]}`")
+    async def send_message(self, message):
+        if len(message) < 2000:
+            await self.log_channel.send(f"`{message}`")
+        else:
+            await self.log_channel.send(f"`{message[:1950]}`")
 
+    def send_log(self, message):
+        asyncio.ensure_future(self.send_message(message))
 
-async def after_ready():
-    await bot.wait_until_ready()
-    logger.add(send_log, level=log_level)
+    async def on_message(self, message):
+        if message.author.bot:
+            return
+        await self.process_commands(message)
 
-initialExtensions = ["cogs.general",
-                     "cogs.members",
-                     "cogs.elder",
-                     "cogs.owner",
-                     "cogs.admin",
-                     "cogs.warrole",
-                     ]
+    async def process_commands(self, message):
+        ctx = await self.get_context(message, cls=context.Context)
+        if ctx.command is None:
+            return
+        async with ctx.acquire():
+            await self.invoke(ctx)
+
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.NoPrivateMessage):
+            await ctx.author.send("This command cannot be used in private messages.")
+        elif isinstance(error, commands.DisabledCommand):
+            await ctx.author.send("Oops. This command is disabled and cannot be used.")
+        elif isinstance(error, commands.CommandInvokeError):
+            original = error.original
+            if not isinstance(original, discord.HTTPException):
+                self.logger.error(f"In {ctx.command.qualified_name}:", file=sys.stderr)
+                traceback.print_tb(original.__traceback__)
+                self.logger.error(f"{original.__class__.__name__}: {original}", file=sys.stderr)
+        elif isinstance(error, commands.ArgumentParsingError):
+            await ctx.send(error)
+
+    async def on_event_error(self, event_name, *args, **kwargs):
+        embed = discord.Embed(title="COC Event Error", color=discord.Color.green())
+        embed.add_field(name="Event", value=event_name)
+        embed.description = f"```py\n{traceback.format_exc()}\n```"
+        embed.timestamp = datetime.utcnow()
+
+        args_str = ["```python\n"]
+        for index, arg in enumerate(args):
+            args_str.append(f"[{index}]: {arg!r}")
+        args_str.append("```")
+        embed.add_field(name="Args", value="\n".join(args_str), inline=False)
+        try:
+            event_channel = self.get_channel(settings['log_channels']['events'])
+            await event_channel.send(embed=embed)
+        except:
+            pass
+
+    async def on_error(self, event_method, *args, **kwargs):
+        e = discord.Embed(title="Discord Event Error", color=0xa32952)
+        e.add_field(name="Event", value=event_method)
+        e.description = f"```py\n{traceback.format_exc()}\n```"
+        e.timestamp = datetime.utcnow()
+
+        args_str = ["```py"]
+        for index, arg in enumerate(args):
+            args_str.append(f"[{index}]: {arg!r}")
+        args_str.append("```")
+        e.add_field(name="Args", value="\n".join(args_str), inline=False)
+        try:
+            await self.log_channel.send(embed=e)
+        except:
+            pass
+
+    async def on_ready(self):
+        logger.info("The Arborist is now planting trees")
+        activity = discord.Game(" with fertilizer")
+        await bot.change_presence(activity=activity)
+        self.logger.info(f'Ready: {self.user} (ID: {self.user.id})')
+
+    async def after_ready(self):
+        await self.wait_until_ready()
+        logger.add(self.send_log, level=log_level)
+
+    async def close(self):
+        await super().close()
+        await self.coc.close()
+
 
 if __name__ == "__main__":
-    bot.remove_command("help")
-    bot.repo = git.Repo(os.getcwd())
-    bot.db = OakDB(bot)
     loop = asyncio.get_event_loop()
-    pool = loop.run_until_complete(bot.db.create_pool())
-    loop.create_task(after_ready())
-    bot.loop = loop
-    bot.db.pool = pool
-    bot.logger = logger
-    bot.coc_client = coc.login(settings['supercell']['user'],
-                               settings['supercell']['pass'],
-                               client=coc.EventsClient,
-                               key_names=coc_names,
-                               correct_tags=True)
-
-    for extension in initialExtensions:
-        try:
-            bot.load_extension(extension)
-            logger.debug(f"{extension} loaded successfully")
-        except Exception as e:
-            logger.info(f"Failed to load extension {extension}")
-            traceback.print_exc()
-
-    bot.run(token)
+    try:
+        pool = loop.run_until_complete(Psql.create_pool())
+        bot = OakBot()
+        bot.repo = git.Repo(os.getcwd())
+        bot.pool = pool
+        bot.loop = loop
+        bot.run(token, reconnect=True)
+    except:
+        traceback.print_exc()

@@ -36,6 +36,16 @@ class OwnerCog(commands.Cog):
             await self.bot.db.pool.close()
             await ctx.send("Database connection closed.")
 
+    @commands.command(name="presence", hidden=True)
+    @commands.is_owner()
+    async def presence(self, ctx, *, msg: str = "default"):
+        """Command to modify bot presence"""
+        if msg.lower() == "default":
+            activity = discord.Game(" with fertilizer")
+        else:
+            activity = discord.Activity(type=discord.ActivityType.watching, name=msg)
+        await self.bot.change_presence(status=discord.Status.online, activity=activity)
+
     async def send_text(self, channel, text, block=None):
         """ Sends text ot channel, splitting if necessary """
         if len(text) < 2000:

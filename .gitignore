@@ -1,3 +1,7 @@
 __pycache__
 *.json
 *.log
+*.jpg
+*.png
+*.pyc
+*.yaml

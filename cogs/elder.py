@@ -1,5 +1,4 @@
 import discord
-import requests
 import asyncio
 import season
 
@@ -16,8 +15,6 @@ class Elder(commands.Cog):
     """Elder only Arborist commands"""
     def __init__(self, bot):
         self.bot = bot
-
-    # TODO Add command for get DM history with @user arg
 
     @commands.command(name="elder", hidden=True)
     async def elder(self, ctx, command: str = "help"):
@@ -114,13 +111,13 @@ class Elder(commands.Cog):
         """Command to add/remove roles from users"""
         if authorized(ctx.author.roles):
             # get role ID for specified role
-            guild = ctx.bot.get_guild(settings['discord']['oakGuildId'])
-            if role_name.lower() not in settings['oakRoles']:
+            guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
+            if role_name.lower() not in settings['oak_roles']:
                 await ctx.send(emojis['other']['redx'] + (" I'm thinking you're going to have to provide "
                                                           "a role that is actually used in this server.\n"
                                                           "Try Guest, Member, Elder, or Co-Leader."))
                 return
-            role_obj = guild.get_role(int(settings['oakRoles'][role_name.lower()]))
+            role_obj = guild.get_role(int(settings['oak_roles'][role_name.lower()]))
             flag = True
             for role in user.roles:
                 if role.name.lower() == role_name.lower():
@@ -155,7 +152,7 @@ class Elder(commands.Cog):
             else:
                 ban = 0
             with Sql(as_dict=True) as cursor:
-                cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = '{player}'")
+                cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = %s", (player, ))
                 fetched = cursor.fetchone()
             if fetched is not None:
                 discord_id = fetched['slackId']
@@ -175,17 +172,18 @@ class Elder(commands.Cog):
                         row_num += 1
                 if found == 1:
                     # Make call to Google Sheet with info to perform move action
-                    url = (f"{settings['google']['oaktable']}?call=kick&rowNum={str(row_num)}&reason={reason}"
+                    url = (f"{settings['google']['oak_table']}?call=kick&rowNum={str(row_num)}&reason={reason}"
                            f"&ban={str(ban)}")
-                    requests.get(url)
+                    async with ctx.session.get(url) as r:
+                        if r.status != 200:
+                            await ctx.send("Please check the Oak Table. Removal was not successful.")
                     reason = reason.replace("%20", " ")
                     content = f"{player} has been moved to old members."
-                    guild = ctx.bot.get_guild(settings['discord']['oakGuildId'])
+                    guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
                     is_user, user = is_discord_user(guild, int(discord_id))
                     # TODO else for is_user
-                    # TODO add code to kick if ban
                     if is_user and ban == 0:
-                        await user.remove_roles(guild.get_role(settings['oakRoles']['member']), reason=reason)
+                        await user.remove_roles(guild.get_role(settings['oak_roles']['member']), reason=reason)
                         content += " Member role has been removed."
                     if is_user and ban == 1:
                         await user.kick(reason=reason)
@@ -378,10 +376,12 @@ class Elder(commands.Cog):
                     row_num = 57
                     for row in values:
                         if row[0] == player_name:
-                            url = (f"{settings['google']['oaktable']}?call=unconfirmed&command={arg}"
+                            url = (f"{settings['google']['oak_table']}?call=unconfirmed&command={arg}"
                                    f"&rowNum={str(row_num)}")
-                            r = requests.get(url)
-                            content = r.text
+                            async with ctx.session.get(url) as r:
+                                if r.status == 200:
+                                    async for line in r.content:
+                                        content = line.decode("utf-8")
                             break
                         else:
                             row_num += 1
@@ -398,27 +398,12 @@ class Elder(commands.Cog):
                                     f"Request: {' '.join(args)}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
-    @commands.command(name="presence", hidden=True)
-    async def presence(self, ctx, *, msg: str = "default"):
-        """Command to modify bot presence"""
-        if authorized(ctx.author.roles):
-            if msg.lower() == "default":
-                activity = discord.Game(" with fertilizer")
-            else:
-                activity = discord.Activity(type=discord.ActivityType.watching, name=msg)
-            await self.bot.change_presence(status=discord.Status.online, activity=activity)
-            print(f"{datetime.now()} - {ctx.author} changed the bot presence to {msg}")
-        else:
-            self.bot.logger.warning(f"User not authorized - "
-                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Request: Presence = {msg}")
-            await ctx.send("Wait one cotton pickin' minute jackrabbit! That command is not for you!")
 
 def authorized(user_roles):
     for role in user_roles:
-        if role.id in [settings['oakRoles']['elder'],
-                       settings['oakRoles']['co-leader'],
-                       settings['oakRoles']['leader']]:
+        if role.id in [settings['oak_roles']['elder'],
+                       settings['oak_roles']['co-leader'],
+                       settings['oak_roles']['leader']]:
             return True
     return False
 
@@ -436,7 +421,7 @@ def is_discord_user(guild, discord_id):
 
 def sup(c):
     superscript_numbers = u"⁰¹²³⁴⁵⁶⁷⁸⁹"
-    if ord(c) >= ord('0') and ord(c) <= ord('9'):
+    if ord('0') <= ord(c) <= ord('9'):
         return superscript_numbers[ord(c) - ord('0')]
     else:
         return c
@@ -452,7 +437,7 @@ def th_superscript(s):
 
 
 scope = "https://www.googleapis.com/auth/spreadsheets.readonly"
-spreadsheetId = settings['google']['oaktableId']
+spreadsheetId = settings['google']['oak_table_id']
 currMemberRange = "Current Members!A3:A52"
 newMemberRange = "Current Members!A57:D61"
 

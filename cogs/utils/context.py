@@ -1,0 +1,301 @@
+import discord
+import asyncio
+import io
+
+from discord.ext import commands
+
+
+class _ContextDBAcquire:
+    __slots__ = ('ctx', 'timeout')
+
+    def __init__(self, ctx, timeout):
+        self.ctx = ctx
+        self.timeout = timeout
+
+    def __await__(self):
+        return self.ctx._acquire(self.timeout).__await__()
+
+    async def __aenter__(self):
+        await self.ctx._acquire(self.timeout)
+        return self.ctx.db
+
+    async def __aexit__(self, *args):
+        await self.ctx.release()
+
+
+class Context(commands.Context):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.pool = self.bot.pool
+        self.coc = self.bot.coc
+        self._db = None
+
+    async def entry_to_code(self, entries):
+        width = max(len(a) for a, b in entries)
+        output = ['```']
+        for name, entry in entries:
+            output.append(f'{name:<{width}}: {entry}')
+        output.append('```')
+        await self.send('\n'.join(output))
+
+    async def indented_entry_to_code(self, entries):
+        width = max(len(a) for a, b in entries)
+        output = ['```']
+        for name, entry in entries:
+            output.append(f'\u200b{name:>{width}}: {entry}')
+        output.append('```')
+        await self.send('\n'.join(output))
+
+    def __repr__(self):
+        # we need this for our cache key strategy
+        return '<Context>'
+
+    @property
+    def session(self):
+        return self.bot.session
+
+    async def disambiguate(self, matches, entry):
+        if len(matches) == 0:
+            raise ValueError('No results found.')
+
+        if len(matches) == 1:
+            return matches[0]
+
+        await self.send('There are too many matches... Which one did you mean? **Only say the number**.')
+        await self.send('\n'.join(f'{index}: {entry(item)}' for index, item in enumerate(matches, 1)))
+
+        def check(m):
+            return m.content.isdigit() and m.author.id == self.author.id and m.channel.id == self.channel.id
+
+        await self.release()
+
+        # only give them 3 tries.
+        try:
+            for i in range(3):
+                try:
+                    message = await self.bot.wait_for('message', check=check, timeout=30.0)
+                except asyncio.TimeoutError:
+                    raise ValueError('Took too long. Goodbye.')
+
+                index = int(message.content)
+                try:
+                    return matches[index - 1]
+                except:
+                    await self.send(f'Please give me a valid number. {2 - i} tries remaining...')
+
+            raise ValueError('Too many tries. Goodbye.')
+        finally:
+            await self.acquire()
+
+    async def prompt(self, message, *, timeout=60.0, delete_after=True, reacquire=True, author_id=None,
+                     additional_options=0):
+        """An interactive reaction confirmation dialog.
+        Parameters
+        -----------
+        message: str
+            The message to show along with the prompt.
+        timeout: float
+            How long to wait before returning.
+        delete_after: bool
+            Whether to delete the confirmation message after we're done.
+        reacquire: bool
+            Whether to release the database connection and then acquire it
+            again when we're done.
+        author_id: Optional[int]
+            The member who should respond to the prompt. Defaults to the author of the
+            Context's message.
+        additional_options: Optional[int]
+            Use numbers instead of yes/no. Returns integer if reaction.
+        Returns
+        --------
+        Optional[bool]
+            ``True`` if explicit confirm,
+            ``False`` if explicit deny,
+            ``None`` if deny due to timeout
+        """
+
+        if not self.channel.permissions_for(self.me).add_reactions:
+            raise RuntimeError('Bot does not have Add Reactions permission.')
+
+        fmt = f'{message}\n\nReact with \N{WHITE HEAVY CHECK MARK} to confirm or \N{CROSS MARK} to deny.'
+
+        if additional_options > 0:
+            fmt = f'{message}\n\nReact with 1\N{combining enclosing keycap} for option 1, ' \
+                  f'2\N{combining enclosing keycap} for option 2, etc.'
+
+        author_id = author_id or self.author.id
+        msg = await self.send(embed=discord.Embed(color=self.bot.color, description=fmt))
+
+        confirm = None
+
+        def check(payload):
+            nonlocal confirm
+
+            if payload.message_id != msg.id or payload.user_id != author_id:
+                return False
+
+            codepoint = str(payload.emoji)
+            if codepoint == '\N{WHITE HEAVY CHECK MARK}':
+                confirm = True
+                return True
+            elif codepoint == '\N{CROSS MARK}':
+                confirm = False
+                return True
+            for i in range(additional_options):
+                if codepoint == f'{i + 1}\N{combining enclosing keycap}':
+                    confirm = i + 1
+                    return True
+
+            return False
+
+        if not additional_options:
+            await msg.add_reaction('\N{WHITE HEAVY CHECK MARK}')
+            await msg.add_reaction('\N{CROSS MARK}')
+        else:
+            for i in range(additional_options):
+                await msg.add_reaction(f'{i + 1}\N{combining enclosing keycap}')
+
+        if reacquire:
+            await self.release()
+
+        try:
+            await self.bot.wait_for('raw_reaction_add', check=check, timeout=timeout)
+        except asyncio.TimeoutError:
+            confirm = None
+
+        try:
+            if reacquire:
+                await self.acquire()
+
+            if delete_after:
+                await msg.delete()
+        finally:
+            return confirm
+
+    def tick(self, opt, label=None):
+        lookup = {
+            True: '\u2705',
+            False: '\u274C',
+            # False: '<:redTick:596576672149667840>',
+            None: '<:greyTick:596576672900186113>',
+        }
+        emoji = lookup.get(opt, '\u274C')
+        if label is not None:
+            return f'{emoji}: {label}'
+        return emoji
+
+    async def confirm(self, opt=True):
+        emoji = self.tick(opt)
+        await self.message.add_reaction(emoji)
+
+    @property
+    def db(self):
+        return self._db if self._db else self.pool
+
+    async def _acquire(self, timeout):
+        if self._db is None:
+            self._db = await self.pool.acquire(timeout=timeout)
+        return self._db
+
+    def acquire(self, *, timeout=None):
+        """Acquires a database connection from the pool. e.g. ::
+
+            async with ctx.acquire():
+                await ctx.db.execute(...)
+
+        or: ::
+
+            await ctx.acquire()
+            try:
+                await ctx.db.execute(...)
+            finally:
+                await ctx.release()
+        """
+        return _ContextDBAcquire(self, timeout)
+
+    async def release(self):
+        """Releases the database connection from the pool.
+
+        Useful if needed for "long" interactive commands where
+        we want to release the connection and re-acquire later.
+
+        Otherwise, this is called automatically by the bot.
+        """
+        # from source digging asyncpg source, releasing an already
+        # released connection does nothing
+
+        if self._db is not None:
+            await self.bot.pool.release(self._db)
+            self._db = None
+
+    async def show_help(self, command=None):
+        """Shows the help command for the specified command if given.
+
+        If no command is given, then it'll show help for the current
+        command.
+        """
+        cmd = self.bot.get_command('help')
+        command = command or self.command.qualified_name
+        await self.invoke(cmd, command=command)
+
+    async def safe_send(self, content, *, escape_mentions=True, **kwargs):
+        """Same as send except with some safe guards.
+
+        1) If the message is too long then it sends a file with the results instead.
+        2) If ``escape_mentions`` is ``True`` then it escapes mentions.
+        """
+        if escape_mentions:
+            content = discord.utils.escape_mentions(content)
+
+        if len(content) > 2000:
+            fp = io.BytesIO(content.encode())
+            kwargs.pop('file', None)
+            return await self.send(file=discord.File(fp, filename='message_too_long.txt'), **kwargs)
+        else:
+            return await self.send(content)
+
+    @staticmethod
+    async def send_text(channel, text, block=None):
+        """ Sends text to channel, splitting if necessary
+        Discord has a 2000 character limit
+        """
+        if len(text) < 1994:
+            if block:
+                await channel.send(f"```{text}```")
+            else:
+                await channel.send(text)
+        else:
+            coll = ""
+            for line in text.splitlines(keepends=True):
+                if len(coll) + len(line) > 1994:
+                    # if collecting is going to be too long, send  what you have so far
+                    if block:
+                        await channel.send(f"```{coll}```")
+                    else:
+                        await channel.send(coll)
+                    coll = ""
+                coll += line
+            await channel.send(coll)
+
+    @staticmethod
+    async def send_embed(channel, header, footer, text, color=discord.Color.red()):
+        """ Sends embed to channel, splitting if necessary """
+        if len(text) < 1000:
+            embed = discord.Embed(color=color)
+            embed.add_field(name=header, value=text, inline=False)
+            embed.set_footer(text=footer)
+            await channel.send(embed=embed)
+        else:
+            coll = ""
+            for line in text.splitlines(keepends=True):
+                if len(coll) + len(line) > 1000:
+                    embed = discord.Embed(color=color)
+                    embed.add_field(name=header, value=coll, inline=False)
+                    await channel.send(embed=embed)
+                    header = "Continued..."
+                    coll = ""
+                coll += line
+            embed = discord.Embed(color=color)
+            embed.add_field(name=header, value=coll, inline=False)
+            embed.set_footer(text=footer)
+            await channel.send(embed=embed)

@@ -1,8 +1,6 @@
 import asyncpg
 import pymssql
-import time
 
-from datetime import datetime
 from config import settings
 
 
@@ -23,13 +21,13 @@ class Sql:
         self.conn.close()
 
 
-class RcsDB:
+class Psql:
     def __init__(self, bot):
         self.bot = bot
 
     @staticmethod
     async def create_pool():
-        pool = await asyncpg.create_pool(f"{settings['pg']['uri']}/psadmin", max_size=85)
+        pool = await asyncpg.create_pool(f"{settings['pg']['uri']}/rcsdata", max_size=85)
         return pool
 
     async def link_user(self, player_tag, discord_id):
@@ -53,17 +51,3 @@ class RcsDB:
                f"VALUES ({discord_id}, '{player_tag}')")
         await conn.execute(sql)
         self.bot.logger.debug(f"{player_tag} added to the database")
-
-    async def last_log(self, log_type):
-        conn = self.bot.pool
-        sql = "SELECT MAX(log_date) as last_log FROM rcs_task_log WHERE log_type = $1"
-        row = await conn.fetch(sql, log_type)
-        if row:
-            return time.strptime(row[0], "%Y-%m-%d")
-        else:
-            return datetime(2019, 1, 1)
-
-    async def get_clans(self):
-        conn = self.bot.pool
-        sql = "SELECT clan_name, clan_tag FROM rcs_clans ORDER BY clan_name"
-        return await conn.fetch(sql)
