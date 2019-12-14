@@ -350,52 +350,53 @@ class Elder(commands.Cog):
         kick playername - Move specified player to No Confirmation
         move playername - Move specified player to Regular Members"""
         if authorized(ctx.author.roles):
-            if len(args) == 0:
-                arg = "list"
-            else:
-                arg = args[0]
-            result = sheet.values().get(spreadsheetId=spreadsheetId, range=newMemberRange).execute()
-            values = result.get("values", [])
-            if arg == "list":
-                # Set logging info
-                args = {"Argument": "List"}
-                if not values:
-                    content = "No new members at this time."
+            async with ctx.typing():
+                if len(args) == 0:
+                    arg = "list"
                 else:
-                    content = "**Unconfirmed new members:**"
-                    for row in values:
-                        content += "\n" + row[0] + " joined on " + row[3]
-                        if (datetime.now() - timedelta(hours=6) - datetime.strptime(row[3], "%d-%b-%y")
-                                > timedelta(days=2)):
-                            content += " :boot:"
-            elif arg in ["kick", "move"]:
-                player_name = " ".join([x for x in args if x != arg])
-                # Set logging info
-                args = {"Argument": arg, "Player": player_name}
-                if not values:
-                    content = "No new members at this time."
+                    arg = args[0]
+                result = sheet.values().get(spreadsheetId=spreadsheetId, range=newMemberRange).execute()
+                values = result.get("values", [])
+                if arg == "list":
+                    # Set logging info
+                    args = {"Argument": "List"}
+                    if not values:
+                        content = "No new members at this time."
+                    else:
+                        content = "**Unconfirmed new members:**"
+                        for row in values:
+                            content += "\n" + row[0] + " joined on " + row[3]
+                            if (datetime.now() - timedelta(hours=6) - datetime.strptime(row[3], "%d-%b-%y")
+                                    > timedelta(days=2)):
+                                content += " :boot:"
+                elif arg in ["kick", "move"]:
+                    player_name = " ".join([x for x in args if x != arg])
+                    # Set logging info
+                    args = {"Argument": arg, "Player": player_name}
+                    if not values:
+                        content = "No new members at this time."
+                    else:
+                        # Set message if member not found. This will change in for loop if member is found.
+                        content = "I had trouble finding that member.  Could you please try again?"
+                        row_num = 57
+                        for row in values:
+                            if row[0] == player_name:
+                                url = (f"{settings['google']['oak_table']}?call=unconfirmed&command={arg}"
+                                       f"&rowNum={str(row_num)}")
+                                async with ctx.session.get(url) as r:
+                                    if r.status == 200:
+                                        async for line in r.content:
+                                            content = line.decode("utf-8")
+                                break
+                            else:
+                                row_num += 1
                 else:
-                    # Set message if member not found. This will change in for loop if member is found.
-                    content = "I had trouble finding that member.  Could you please try again?"
-                    row_num = 57
-                    for row in values:
-                        if row[0] == player_name:
-                            url = (f"{settings['google']['oak_table']}?call=unconfirmed&command={arg}"
-                                   f"&rowNum={str(row_num)}")
-                            async with ctx.session.get(url) as r:
-                                if r.status == 200:
-                                    async for line in r.content:
-                                        content = line.decode("utf-8")
-                            break
-                        else:
-                            row_num += 1
-            else:
-                self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                        f"Problem: Invalid arguments - {' '.join(args)}")
-                content = "You have provided an invalid argument. Please specify `list`, `kick`, or `move`."
+                    self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                            f"Problem: Invalid arguments - {' '.join(args)}")
+                    content = "You have provided an invalid argument. Please specify `list`, `kick`, or `move`."
+                    await ctx.send(content)
+                    return
                 await ctx.send(content)
-                return
-            await ctx.send(content)
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
