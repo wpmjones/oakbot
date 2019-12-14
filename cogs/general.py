@@ -2,6 +2,7 @@ import discord
 
 from discord.ext import commands
 from cogs.utils.db import Sql
+from cogs.utils.constants import leagues_to_emoji
 from config import settings, emojis, color_pick
 
 
@@ -53,9 +54,10 @@ class General(commands.Cog):
         # pull non-in-game stats from db
         with Sql(as_dict=True) as cursor:
             sql = (f"SELECT tag, numWars, avgStars, warStats, joinDate, slackId "
-                   f"FROM oak_members "
-                   f"WHERE player_name = %s")
-            oak_stats = cursor.fetchrow(sql, player_name)
+                   f"FROM coc_oak_players "
+                   f"WHERE playerName = %s")
+            cursor.execute(sql, player_name)
+            oak_stats = cursor.fetchone()
         try:
             if not oak_stats:
                 self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
@@ -69,10 +71,10 @@ class General(commands.Cog):
                                   f"<@251150854571163648> I was trying to look up {player_name} "
                                   f"but the world conspired against me.")
         # retrieve player info from coc.py
-        player_tag = f"#{oak_stats['player_tag']}"
+        player_tag = f"#{oak_stats['tag']}"
         player = await self.bot.coc.get_player(player_tag)
         troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
-        sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer"]
+        sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer", "Siege Barracks"]
         count = 0
         for name, troop in player.ordered_home_troops.items():
             if name not in sm_troops:
@@ -100,7 +102,7 @@ class General(commands.Cog):
         count = 0
         for name, troop in player.ordered_builder_troops.items():
             count += 1
-            builder_levels += f"{emojis['buildTroops'][name]}{str(troop.level)} "
+            builder_levels += f"{emojis['build_troops'][name]}{str(troop.level)} "
             if count % 6 == 0:
                 builder_levels += "\n"
         # Test for number of heroes
@@ -110,12 +112,12 @@ class General(commands.Cog):
                     hero_levels += f"{emojis['heroes'][name]}{str(hero.level)} "
                 else:
                     builder_hero = f"{emojis['heroes'][name]}{str(hero.level)}"
-        embed = discord.Embed(title=f"{emojis['league'][get_league_emoji(player.league.name)]} "
+        embed = discord.Embed(title=f"{emojis['league'][leagues_to_emoji[player.league.name]]} "
                                     f"{player.name} "
                                     f"({player.tag})",
                               color=color_pick(226, 226, 26))
         embed.add_field(name="Town Hall",
-                        value=f"{emojis['thIcon'][player.town_hall]} {str(player.town_hall)}",
+                        value=f"{emojis['th_icon'][player.town_hall]} {str(player.town_hall)}",
                         inline=True)
         embed.add_field(name="Trophies", value=player.trophies, inline=True)
         embed.add_field(name="Best Trophies", value=player.best_trophies, inline=True)
@@ -132,10 +134,10 @@ class General(commands.Cog):
         if hero_levels != "":
             embed.add_field(name="Heroes", value=hero_levels, inline=False)
         embed.add_field(name="Builder Hall Level",
-                        value=f"{emojis['bhIcon'][player.builder_hall]} {str(player.builder_hall)}",
+                        value=f"{emojis['bh_icon'][player.builder_hall]} {str(player.builder_hall)}",
                         inline=False)
         embed.add_field(name="Versus Trophies", value=str(player.versus_trophies), inline=True)
-        embed.add_field(name="Versus Battle Wins", value=str(player.versus_attacks_wins), inline=True)
+        embed.add_field(name="Versus Battle Wins", value=str(player.versus_attack_wins), inline=True)
         embed.add_field(name="Best Versus Trophies", value=str(player.best_versus_trophies), inline=True)
         embed.add_field(name="Troop Levels", value=builder_levels, inline=False)
         if builder_hero != "":
@@ -184,12 +186,16 @@ class General(commands.Cog):
             siege = ("Posts request for the specified siege machine in Discord and tags those players that can donate."
                      "\n**ground**: Wall Wrecker"
                      "\n**blimp**: Battle Blimp"
-                     "\n**slammer**: Stone Slammer")
+                     "\n**slammer**: Stone Slammer"
+                     "\n**barracks**: Siege Barracks")
             embed.add_field(name="/siege <siege type>", value=siege, inline=False)
         if command in ["all", "player"]:
             player = ("Display vital statistics on the requested player. This includes information "
                       "on in game stats as well as stats while in Reddit Oak.")
             embed.add_field(name="/player <in game name>", value=player, inline=False)
+        if command in ["all", "avatar"]:
+            avatar = "Provides an enlarged version of the specified player's avatar."
+            embed.add_field(name="/avatar <Discord Mention or ID>", value=avatar, inline=False)
         if command == "elder":
             elder = "To display help for elder commands, please type /elder."
             embed.add_field(name="/elder", value=elder, inline=False)
@@ -209,7 +215,9 @@ class General(commands.Cog):
         Options:
          - ground, ww, wall wrecker
          - air1, blimp, battle blimp, bb
-         - air2, stone, slam, slammer, stone slammer"""
+         - air2, stone, slam, slammer, stone slammer
+         - barracks, sb
+         """
         user_id = ctx.author.id
         if siege_req == "help":
             embed = discord.Embed(title="The Arborist by Reddit Oak", color=color_pick(15, 250, 15))
@@ -217,48 +225,48 @@ class General(commands.Cog):
             siege = ("Posts request for the specified siege machine in Discord and tags those players that can donate."
                      "\n**ground**: Wall Wrecker"
                      "\n**blimp**: Battle Blimp"
-                     "\n**slammer**: Stone Slammer")
+                     "\n**slammer**: Stone Slammer"
+                     "\n**barracks**: Siege Barracks")
             embed.add_field(name="/siege <siege type>", value=siege, inline=False)
             embed.set_footer(icon_url="https://openclipart.org/image/300px/svg_to_png/122449/1298569779.png",
                              text="The Arborist proudly maintained by TubaKid.")
             await ctx.send(embed=embed)
             return
-        if siege_req in ["ground", "ww", "wall wrecker"]:
-            siege_type = "wall_wrecker"
+        if siege_req in ["ww", "wall wrecker"]:
             siege_name = "Wall Wrecker"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-ram.png"
         elif siege_req in ["blimp", "air1", "bb", "battle blimp"]:
-            siege_type = "battle_blimp"
             siege_name = "Battle Blimp"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-flyer.png"
         elif siege_req in ["stone", "slammer", "slam", "air2", "stone slammer"]:
-            siege_type = "stone_slammer"
             siege_name = "Stone Slammer"
             thumb = "https://coc.guide/static/imgs/troop/siege-bowler-balloon.png"
+        elif siege_req in ["barracks", "sb", "seige barracks", "baracks"]:
+            siege_name = "Siege Barracks"
+            thumb = "https://coc.guide/static/imgs/troop/siege-machine-carrier.png"
         else:
             await ctx.send("You have provided an invalid siege machine type. "
-                           "Please specify `ground`, `blimp`, or `slammer`")
+                           "Please specify `ground`, `blimp`, `slammer`, or `barracks`")
             return
         sent_msg = await ctx.send(f"One moment while I check to see who has those.")
         donors = []
+        requestor = None
+        conn = self.bot.pool
+        # get requestor player tag from database
+        sql = "SELECT player_tag FROM rcs_discord_links WHERE discord_id = $1"
+        requestor_tag = await conn.fetchval(sql, user_id)
         clan = await self.bot.coc.get_clan("#CVCJR89")
+        # find oak players with the requested siege machine
         async for player in clan.get_detailed_members(cache=True):
             if siege_name in player.home_troops_dict.keys():
-                donors.append(f"{player.name}: ")
-        conn = self.bot.db.pool
-        # get all oak players
-        sql = f"SELECT player_name, player_tag, discord_id, {siege_type} FROM oak_discord"
-        rows = await conn.fetch(sql)
-        donors = []
-        for row in rows:
-            if row['discord_id'] == user_id:
-                requestor = row['player_name']
-            if row[siege_type] > 0:
-                donors.append(f"{row['player_name']}: <@{row['discord_id']}>")
+                sql = "SELECT discord_id FROM rcs_discord_links WHERE player_tag = $1"
+                discord_id = await conn.fetchval(sql, player.tag[1:])
+                donors.append(f"{player.name}: <@{discord_id}>")
+            if requestor_tag == player.tag[1:]:
+                requestor = player.name
         if not requestor:
             requestor = ctx.author.name
-        self.bot.logger.debug(f"Requestor is {requestor}.")
-        self.bot.logger.debug(donors)
+        # self.bot.logger.debug(donors)
         await sent_msg.delete()
         embed = discord.Embed(title=f"{siege_name} Request",
                               description=f"{requestor} has requested a {siege_name}",
@@ -287,37 +295,6 @@ def is_discord_user(guild, discord_id):
             return True, user
     except:
         return False, None
-
-
-def get_league_emoji(league_name):
-    leagues = [
-        ("Titan League I", "titan1"),
-        ("Titan League II", "titan2"),
-        ("Titan League III", "titan3"),
-        ("Champion League I", "champs1"),
-        ("Champion League II", "champs2"),
-        ("Champion League III", "champs3"),
-        ("Master League I", "masters1"),
-        ("Master League II", "masters2"),
-        ("Master League III", "masters3"),
-        ("Crystal League I", "crystal1"),
-        ("Crystal League II", "crystal2"),
-        ("Crystal League III", "crystal3"),
-        ("Gold League I", "gold1"),
-        ("Gold League II", "gold2"),
-        ("Gold League III", "gold3"),
-        ("Silver League I", "silver1"),
-        ("Silver League II", "silver2"),
-        ("Silver League III", "silver3"),
-        ("Bronze League I", "bronze1"),
-        ("Bronze League II", "bronze2"),
-        ("Bronze League III", "bronze3"),
-        ("Unranked", "unranked")
-    ]
-    for league in leagues:
-        if league_name in league:
-            return league[1]
-
 
 
 def setup(bot):

@@ -3,7 +3,7 @@ import asyncio
 import season
 
 from discord.ext import commands
-from cogs.utils.db import Sql
+from cogs.utils.db import Sql, Psql
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from httplib2 import Http
@@ -37,7 +37,7 @@ class Elder(commands.Cog):
                 embed.add_field(name="/warn <in-game name> <reason for warning>", value=warn_add, inline=False)
                 warn_remove = ("Removes the specified warning (warning ID). You will need to do /warn list "
                                "first to obtain the warning ID.")
-                embed.add_field(name="/warn remove #", value=warn_remove, inline=False)
+                embed.add_field(name="/warn remove <warning ID>", value=warn_remove, inline=False)
             if command in ["help", "kick"]:
                 kick = ('Removes specified player from the Oak Table adding the reason you supply to the notes. '
                         'Removes the Member role from their Discord account. For players with spaces in '
@@ -57,10 +57,6 @@ class Elder(commands.Cog):
                 un_move = ("Move specified player to Regular Member "
                            "(if they failed the quiz or didn't move for some other reason.")
                 embed.add_field(name="/unconfirmed move <in-game name>", value=un_move, inline=False)
-            if command in ["help", "presence"]:
-                presence = "Change the bot presence (message under bot name) to the default OR the specified message."
-                embed.add_field(name="/presence <default or message>", value=presence, inline=False)
-            await ctx.send(embed=embed)
             self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
         else:
             self.bot.logger.warning(f"User not authorized - "
@@ -68,7 +64,7 @@ class Elder(commands.Cog):
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="war", aliases=["xar"])
-    async def war(self, ctx, add, player_input, user: discord.Member):
+    async def war(self, ctx, add, player_input, member: discord.Member):
         """This command mirrors the warbot command to link discord id to player tag
         Since the elders are already using the command, this snags the same line and
         uses the information to add records in the PostgreSQL database to link the same."""
@@ -76,22 +72,27 @@ class Elder(commands.Cog):
         if authorized(ctx.author.roles) and add == "add":
             if player_input.startswith("#"):
                 player_tag = player_input[1:]
+                print(player_tag)
             else:
                 oak_tag = "#CVCJR89"
                 try:
-                    player = await self.bot.coc_client.get_player(f"#{player_input}")
+                    player = await self.bot.coc.get_player(f"#{player_input}")
                     if player.clan.tag == oak_tag:
                         player_tag = player_input
+                        print(player_tag)
                 except:
                     # Assume input provided is the player name
-                    members = await self.bot.coc_client.get_members(oak_tag)
+                    # members = await self.bot.coc.get_members(oak_tag)
+                    members = (await self.bot.coc.get_clan(oak_tag)).members
                     try:
                         player_tag = members[[member.name for member in members].index(player_input)].tag[1:]
+                        print(player_tag)
                     except:
+                        print("fail")
                         self.bot.logger.info(f"{player_input} is not valid for the war add command."
                                              f"Attempted by {ctx.author} in {ctx.channel}.")
                         return
-            await self.bot.db.link_user(player_tag, str(user.id))
+            await Psql(self.bot).link_user(player_tag, member.id)
             self.bot.logger.debug(f"Discord ID successfully added to db for {player_input}.")
 
     @war.error
@@ -119,16 +120,19 @@ class Elder(commands.Cog):
                 return
             role_obj = guild.get_role(int(settings['oak_roles'][role_name.lower()]))
             flag = True
+            # check to see if the user already has the role
             for role in user.roles:
                 if role.name.lower() == role_name.lower():
                     flag = False
             if flag:
                 await user.add_roles(role_obj, reason=f"Arborist command issued by {ctx.author}")
-                await ctx.send(f":white_check_mark: Changed roles for {user.display_name}, +{role_name}\n"
-                               f"Is it also time to do `/war add`?")
+                content = f":white_check_mark: **Added** {role_name.title()} role for {user.display_name}"
+                if role_name.lower() == "member":
+                    content += "\nIs it also time to do `/war add`?"
+                await ctx.send(content)
             else:
                 await user.remove_roles(role_obj, reason=f"Arborist command issued by {ctx.author}")
-                await ctx.send(f":white_check_mark: Changed roles for {user.display_name}, -{role_name}")
+                await ctx.send(f":white_check_mark: **Removed** {role_name.title()} role for {user.display_name}")
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
@@ -221,7 +225,9 @@ class Elder(commands.Cog):
         if authorized(ctx.author.roles):
             with Sql(as_dict=True) as cursor:
                 if player == "list" or player is None:
-                    cursor.execute("SELECT * FROM coc_oak_warnList ORDER BY playerName, strikeNum")
+                    cursor.execute("SELECT strikeNum, playerName, warnDate, warning, warningId "
+                                   "FROM coc_oak_warnList "
+                                   "ORDER BY playerName, strikeNum")
                     strikes = cursor.fetchall()
                     embed = discord.Embed(title="Reddit Oak Watchlist",
                                           description="All warnings expire after 60 days.",
@@ -314,7 +320,7 @@ class Elder(commands.Cog):
             percent = season.get_days_since() / season.get_season_length()
             attacks_needed = int(20 * percent)
             donates_needed = int(600 * percent)
-            clan = await self.bot.coc_client.get_clan("#CVCJR89")
+            clan = await self.bot.coc.get_clan("#CVCJR89")
             self.bot.logger.debug("Clan retrieved")
             warn_text = (f"**We are {season.get_days_since()} days into a {season.get_season_length()} day season.\n"
                          f"These statistics are based on what players should have this far into the season.**\n\n"
@@ -322,8 +328,6 @@ class Elder(commands.Cog):
             low_text = high_text = ""
             async for player in clan.get_detailed_members():
                 self.bot.logger.debug(f"Evaluating {player.name}")
-                if player.tag == "#Y29CGU0Q":  # Skip Connie
-                    continue
                 if player.town_hall <= 9 and player.attack_wins < attacks_needed:
                     low_text += (f"{player.name}{th_superscript(player.town_hall)} "
                                  f"is below {attacks_needed} attack wins ({player.attack_wins}).\n")

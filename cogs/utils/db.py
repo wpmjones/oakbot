@@ -32,22 +32,11 @@ class Psql:
 
     async def link_user(self, player_tag, discord_id):
         conn = self.bot.pool
-        sql = f"SELECT discord_id FROM rcs_discord_links WHERE player_tag = '{player_tag}'"
-        row = await conn.fetchrow(sql)
-        if row:
-            if row['discord_id'] == discord_id:
-                # player record is already in db
-                self.bot.logger.debug(f"{player_tag} is already in the database.")
-                return
-            # row exists but has a different discord_id
-            sql = (f"UPDATE rcs_discord_links"
-                   f"SET discord_id = {discord_id}"
-                   f"WHERE player_tag = '{player_tag}'")
-            await conn.execute(sql)
-            self.bot.logger.debug(f"The discord id did not match {discord_id}, so I updated it!")
-            return
-        # no player record in db
-        sql = (f"INSERT INTO rcs_discord_links (discord_id, player_tag) "
-               f"VALUES ({discord_id}, '{player_tag}')")
-        await conn.execute(sql)
-        self.bot.logger.debug(f"{player_tag} added to the database")
+        sql = ("INSERT INTO rcs_discord_links (discord_id, player_tag) "
+               "VALUES ($1, $2)"
+               "ON CONFLICT (player_tag) DO "
+               "UPDATE "
+               "SET discord_id = $1 "
+               "WHERE rcs_discord_links.player_tag = $2")
+        await conn.execute(sql, discord_id, player_tag)
+
