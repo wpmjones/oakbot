@@ -14,6 +14,7 @@ import subprocess
 
 from discord.ext import commands
 from cogs.utils.db import Sql
+from cogs.utils.checks import not_zs
 from contextlib import redirect_stdout
 from typing import Optional
 from .utils.formats import TabularData, plural
@@ -121,6 +122,7 @@ class Admin(commands.Cog):
         return f'```py\n{e.text}{"^":>{e.offset}}\n{e.__class__.__name__}: {e}```'
 
     @commands.command(hidden=True)
+    @not_zs()
     async def load(self, ctx, *, module):
         """Loads a module."""
         try:
@@ -131,6 +133,7 @@ class Admin(commands.Cog):
             await ctx.send('\N{OK HAND SIGN}')
 
     @commands.command(hidden=True)
+    @not_zs()
     async def unload(self, ctx, *, module):
         """Unloads a module."""
         try:
@@ -141,6 +144,7 @@ class Admin(commands.Cog):
             await ctx.send('\N{OK HAND SIGN}')
 
     @commands.group(name='reload', hidden=True, invoke_without_command=True)
+    @not_zs()
     async def _reload(self, ctx, *, module):
         """Reloads a module."""
         try:
@@ -176,6 +180,7 @@ class Admin(commands.Cog):
             self.bot.load_extension(module)
 
     @_reload.command(name='all', hidden=True)
+    @not_zs()
     async def _reload_all(self, ctx):
         """Reloads all modules, while pulling from git."""
 
@@ -221,6 +226,7 @@ class Admin(commands.Cog):
         await ctx.send('\n'.join(f'{status}: `{module}`' for status, module in statuses))
 
     @commands.command(pass_context=True, hidden=True, name='eval')
+    @not_zs()
     async def _eval(self, ctx, *, body: str):
         """Evaluates a code"""
 
@@ -268,6 +274,7 @@ class Admin(commands.Cog):
                 await ctx.send(f'```py\n{value}{ret}\n```')
 
     @commands.command(pass_context=True, hidden=True)
+    @not_zs()
     async def repl(self, ctx):
         """Launches an interactive REPL session."""
         variables = {
@@ -357,6 +364,7 @@ class Admin(commands.Cog):
                 await ctx.send(f'Unexpected error: `{e}`')
 
     @commands.command(hidden=True)
+    @not_zs()
     async def sql(self, ctx, *, query: str):
         """Run some SQL."""
 
@@ -396,6 +404,7 @@ class Admin(commands.Cog):
             await ctx.send(fmt)
 
     @commands.command(hidden=True)
+    @not_zs()
     async def psql(self, ctx, *, query: str):
         """Run some SQL."""
 
@@ -433,6 +442,7 @@ class Admin(commands.Cog):
             await ctx.send(fmt)
 
     @commands.command(hidden=True)
+    @not_zs()
     async def sql_table(self, ctx, *, table_name: str):
         """Runs a query describing the table schema."""
         from .utils.formats import TabularData
@@ -458,6 +468,7 @@ class Admin(commands.Cog):
             await ctx.send(fmt)
 
     @commands.command(hidden=True)
+    @not_zs()
     async def sudo(self, ctx, channel: Optional[GlobalChannel], who: discord.User, *, command: str):
         """Run a command as another user optionally in another channel."""
         msg = copy.copy(ctx.message)
@@ -470,6 +481,7 @@ class Admin(commands.Cog):
         await self.bot.invoke(new_ctx)
 
     @commands.command(hidden=True)
+    @not_zs()
     async def do(self, ctx, times: int, *, command):
         """Repeats a command a specified number of times."""
         msg = copy.copy(ctx.message)
@@ -482,6 +494,7 @@ class Admin(commands.Cog):
             await new_ctx.reinvoke()
 
     @commands.command(hidden=True)
+    @not_zs()
     async def sh(self, ctx, *, command):
         """Runs a shell command."""
         from cogs.utils.paginator import TextPages
@@ -501,6 +514,7 @@ class Admin(commands.Cog):
             await ctx.send(str(e))
 
     @commands.command(hidden=True)
+    @not_zs()
     async def perf(self, ctx, *, command):
         """Checks the timing of a command, attempting to suppress HTTP and DB calls."""
 
