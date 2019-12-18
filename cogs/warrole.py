@@ -7,12 +7,12 @@ class WarSetup(commands.Cog):
     """Commands to be run during war"""
     def __init__(self, bot):
         self.bot = bot
-        self.bot.coc_client.add_war_update("#CVCJR89")
-        self.bot.coc_client.add_events(self.on_war_state_change)
-        self.bot.coc_client.start_updates("war")
+        self.bot.coc.add_war_update("#CVCJR89")
+        self.bot.coc.add_events(self.on_war_state_change)
+        self.bot.coc.start_updates("war")
 
     def cog_unload(self):
-        self.bot.coc_client.stop_updates("war")
+        self.bot.coc.stop_updates("war")
 
     @property
     def elder_channel(self):
@@ -105,7 +105,7 @@ class WarSetup(commands.Cog):
         """ Assign inWar role to those participating in the current war """
         guild = self.bot.get_guild(settings['discord']['oakGuildId'])
         conn = self.bot.db.pool
-        war = await self.bot.coc_client.get_current_war("#CVCJR89")
+        war = await self.bot.coc.get_current_war("#CVCJR89")
         if war.state in ["preparation", "inWar"]:
             msg = await ctx.send("Adding roles. One moment...")
             war_role = guild.get_role(int(settings['oakRoles']['inwar']))
