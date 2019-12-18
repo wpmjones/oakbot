@@ -21,7 +21,7 @@ class WarSetup(commands.Cog):
     async def on_war_state_change(self, current_state, war):
         """ Assign inWar role to those participating in the current war """
         self.bot.logger.debug(f"Current State: {current_state}\nWar State: {war.state}")
-        conn = self.bot.db.pool
+        conn = self.bot.pool
         guild = self.bot.get_guild(settings['discord']['oakguild_id'])
         war_role = guild.get_role(settings['oak_roles']['inwar'])
         if current_state == "preparation":
@@ -104,7 +104,7 @@ class WarSetup(commands.Cog):
     async def war_roles(self, ctx):
         """ Assign inWar role to those participating in the current war """
         guild = self.bot.get_guild(settings['discord']['oakguild_id'])
-        conn = self.bot.db.pool
+        conn = self.bot.pool
         war = await self.bot.coc.get_current_war("#CVCJR89")
         if war.state in ["preparation", "inWar"]:
             msg = await ctx.send("Adding roles. One moment...")
