@@ -103,7 +103,7 @@ class WarSetup(commands.Cog):
     @commands.command(name="warroles", aliases=["warrole"], hidden=True)
     async def war_roles(self, ctx):
         """ Assign inWar role to those participating in the current war """
-        guild = self.bot.get_guild(settings['discord']['oakGuild_id'])
+        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
         conn = self.bot.db.pool
         war = await self.bot.coc.get_current_war("#CVCJR89")
         if war.state in ["preparation", "inWar"]:
