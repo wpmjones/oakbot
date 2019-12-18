@@ -22,8 +22,8 @@ class WarSetup(commands.Cog):
         """ Assign inWar role to those participating in the current war """
         self.bot.logger.debug(f"Current State: {current_state}\nWar State: {war.state}")
         conn = self.bot.db.pool
-        guild = self.bot.get_guild(settings['discord']['oakGuildId'])
-        war_role = guild.get_role(settings['oakRoles']['inwar'])
+        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        war_role = guild.get_role(settings['oak_roles']['inwar'])
         if current_state == "preparation":
             self.bot.logger.debug("War state changed to preparation")
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
@@ -103,12 +103,12 @@ class WarSetup(commands.Cog):
     @commands.command(name="warroles", aliases=["warrole"], hidden=True)
     async def war_roles(self, ctx):
         """ Assign inWar role to those participating in the current war """
-        guild = self.bot.get_guild(settings['discord']['oakGuildId'])
+        guild = self.bot.get_guild(settings['discord']['oakGuild_id'])
         conn = self.bot.db.pool
         war = await self.bot.coc.get_current_war("#CVCJR89")
         if war.state in ["preparation", "inWar"]:
             msg = await ctx.send("Adding roles. One moment...")
-            war_role = guild.get_role(int(settings['oakRoles']['inwar']))
+            war_role = guild.get_role(int(settings['oak_roles']['inwar']))
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
@@ -139,7 +139,7 @@ class WarSetup(commands.Cog):
         else:
             # refresh role object, pull members with that role, remove the role
             msg = await ctx.send("Removing war roles. One moment...")
-            war_role = guild.get_role(int(settings['oakRoles']['inwar']))
+            war_role = guild.get_role(int(settings['oak_roles']['inwar']))
             members = war_role.members
             try:
                 for user in members:
