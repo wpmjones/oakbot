@@ -4,6 +4,7 @@ import season
 
 from discord.ext import commands
 from cogs.utils.db import Sql, Psql
+from cogs.utils.checks import is_elder
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from httplib2 import Http
@@ -17,51 +18,47 @@ class Elder(commands.Cog):
         self.bot = bot
 
     @commands.command(name="elder", hidden=True)
+    @is_elder()
     async def elder(self, ctx, command: str = "help"):
         """Help menu for elder staff"""
-        if authorized(ctx.author.roles):
-            embed = discord.Embed(title="Reddit Oak Elder Help Menu",
-                                  description="All the elder commands you need but can't remember how to use!",
-                                  color=color_pick(66, 134, 244))
-            embed.add_field(name="Commands:", value="-----------", inline=True)
-            if command in ["help", "role"]:
-                role = ("Adds the specified role to the specified user if they do not have it. "
-                        "Removes the role if they already have it.")
-                embed.add_field(name="/role <@discord mention> <discord role>", value=role, inline=False)
-            if command in ["help", "warn"]:
-                warn_list = "Lists all strikes for all users. Sorted by user (alphabetically)."
-                embed.add_field(name="/warn", value=warn_list, inline=False)
-                warn_add = ("Adds a strike to the specified player with the specified reason. The bot will "
-                            "respond with a list of all strikes for that player. No DM is sent at this time! "
-                            "That will be a future enhancement. Please notify them in some other way.")
-                embed.add_field(name="/warn <in-game name> <reason for warning>", value=warn_add, inline=False)
-                warn_remove = ("Removes the specified warning (warning ID). You will need to do /warn list "
-                               "first to obtain the warning ID.")
-                embed.add_field(name="/warn remove <warning ID>", value=warn_remove, inline=False)
-            if command in ["help", "kick"]:
-                kick = ('Removes specified player from the Oak Table adding the reason you supply to the notes. '
-                        'Removes the Member role from their Discord account. For players with spaces in '
-                        'their name, "user quotes".')
-                embed.add_field(name="/kick <in-game name> <reason for kick>", value=kick, inline=False)
-            if command in ["help", "ban"]:
-                ban = ("Removes specified player from the Oak Table adding the reason you "
-                       "supply and flags them as a permanent ban. Kicks the player from the Discord server. "
-                       "For players with spaces in their name, 'use quotes'.")
-                embed.add_field(name="/ban <in-game name> <reason for ban>", value=ban, inline=False)
-            if command in ["help", "unconfirmed"]:
-                un_list = ("Lists all players who have not yet confirmed the rules. "
-                           "If they have been in the clan for more than 2 days, you will see a :boot:")
-                embed.add_field(name="/unconfirmed", value=un_list, inline=False)
-                un_kick = "Move specified player to No Confirmation."
-                embed.add_field(name="/unconfirmed kick <in-game name>", value=un_kick, inline=False)
-                un_move = ("Move specified player to Regular Member "
-                           "(if they failed the quiz or didn't move for some other reason.")
-                embed.add_field(name="/unconfirmed move <in-game name>", value=un_move, inline=False)
-            self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
-        else:
-            self.bot.logger.warning(f"User not authorized - "
-                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
-            await ctx.send("Wait a minute punk! You aren't allowed to use that command")
+        embed = discord.Embed(title="Reddit Oak Elder Help Menu",
+                              description="All the elder commands you need but can't remember how to use!",
+                              color=color_pick(66, 134, 244))
+        embed.add_field(name="Commands:", value="-----------", inline=True)
+        if command in ["help", "role"]:
+            role = ("Adds the specified role to the specified user if they do not have it. "
+                    "Removes the role if they already have it.")
+            embed.add_field(name="/role <@discord mention> <discord role>", value=role, inline=False)
+        if command in ["help", "warn"]:
+            warn_list = "Lists all strikes for all users. Sorted by user (alphabetically)."
+            embed.add_field(name="/warn", value=warn_list, inline=False)
+            warn_add = ("Adds a strike to the specified player with the specified reason. The bot will "
+                        "respond with a list of all strikes for that player. No DM is sent at this time! "
+                        "That will be a future enhancement. Please notify them in some other way.")
+            embed.add_field(name="/warn <in-game name> <reason for warning>", value=warn_add, inline=False)
+            warn_remove = ("Removes the specified warning (warning ID). You will need to do /warn list "
+                           "first to obtain the warning ID.")
+            embed.add_field(name="/warn remove <warning ID>", value=warn_remove, inline=False)
+        if command in ["help", "kick"]:
+            kick = ('Removes specified player from the Oak Table adding the reason you supply to the notes. '
+                    'Removes the Member role from their Discord account. For players with spaces in '
+                    'their name, "user quotes".')
+            embed.add_field(name="/kick <in-game name> <reason for kick>", value=kick, inline=False)
+        if command in ["help", "ban"]:
+            ban = ("Removes specified player from the Oak Table adding the reason you "
+                   "supply and flags them as a permanent ban. Kicks the player from the Discord server. "
+                   "For players with spaces in their name, 'use quotes'.")
+            embed.add_field(name="/ban <in-game name> <reason for ban>", value=ban, inline=False)
+        if command in ["help", "unconfirmed"]:
+            un_list = ("Lists all players who have not yet confirmed the rules. "
+                       "If they have been in the clan for more than 2 days, you will see a :boot:")
+            embed.add_field(name="/unconfirmed", value=un_list, inline=False)
+            un_kick = "Move specified player to No Confirmation."
+            embed.add_field(name="/unconfirmed kick <in-game name>", value=un_kick, inline=False)
+            un_move = ("Move specified player to Regular Member "
+                       "(if they failed the quiz or didn't move for some other reason.")
+            embed.add_field(name="/unconfirmed move <in-game name>", value=un_move, inline=False)
+        self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
 
     @commands.command(name="war", aliases=["xar"])
     async def war(self, ctx, add, player_input, member: discord.Member):
