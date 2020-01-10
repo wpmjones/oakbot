@@ -58,6 +58,7 @@ class Elder(commands.Cog):
             un_move = ("Move specified player to Regular Member "
                        "(if they failed the quiz or didn't move for some other reason.")
             embed.add_field(name="/unconfirmed move <in-game name>", value=un_move, inline=False)
+        await ctx.send(embed=embed)
         self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
 
     @commands.command(name="war", aliases=["xar"])
