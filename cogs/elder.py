@@ -158,6 +158,7 @@ class Elder(commands.Cog):
                 fetched = cursor.fetchone()
             if fetched is not None:
                 discord_id = fetched['slackId']
+                player_tag = fetched['tag']
                 if reason is not None:
                     reason = "%20".join(reason)
                 else:
@@ -180,7 +181,7 @@ class Elder(commands.Cog):
                         if r.status != 200:
                             await ctx.send("Please check the Oak Table. Removal was not successful.")
                     reason = reason.replace("%20", " ")
-                    content = f"{player} has been moved to old members."
+                    content = f"{player} (#{player_tag}) has been moved to old members."
                     guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
                     is_user, user = is_discord_user(guild, int(discord_id))
                     # TODO else for is_user
@@ -196,13 +197,11 @@ class Elder(commands.Cog):
                 else:
                     self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                             f"Problem: {player} not found in Oak Table")
-                    await ctx.send("Player name not found in Oak Table. Please try again.")
-                    return
+                    return await ctx.send("Player name not found in Oak Table. Please try again.")
             else:
                 self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                         f"Problem: {player} not found in SQL Database")
-                await ctx.send("You have provided an invalid player name.  Please try again.")
-                return
+                return await ctx.send("You have provided an invalid player name.  Please try again.")
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
