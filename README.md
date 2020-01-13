@@ -4,13 +4,19 @@
 
 A custom bot for the Reddit Oak clan Discord Server. Developed by TubaKid.
 
-## /player
-**/player in-game name**
+If you have any questions or concerns in Discord, just type `/help` or `/help <command>` for help. 
+
+## /player <in-game name>
 List statistics, troop/spell levels, info for specified player.
 
-## /siege
-**/siege [ground, blimp, slammer]**
+## /siege <siege type>
 Request siege machine of the specified type. Discord will tag all players in the clan that have the specified siege machine.
+
+**Siege Types:**  
+Wall Wrecker  
+Stone Slammer  
+Battle Blimp  
+Siege Barracks
 
 ## /role
 **/role @DiscordUser#1234 RoleName**
