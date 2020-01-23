@@ -7,25 +7,34 @@ class WarSetup(commands.Cog):
     """Commands to be run during war"""
     def __init__(self, bot):
         self.bot = bot
-        self.bot.coc.add_war_update("#CVCJR89")
+        self.elder_channel = None
+        self.guild = None
         self.bot.coc.add_events(self.on_war_state_change)
+        self.bot.coc.add_war_update("#CVCJR89")
         self.bot.coc.start_updates("war")
+        bot.loop.create_task(self.cog_init_ready())
 
     def cog_unload(self):
-        self.bot.coc.stop_updates("war")
+        self.bot.coc.remove_events(self.on_war_state_change)
 
-    @property
-    def elder_channel(self):
-        return self.bot.get_channel(settings['oakChannels']['elderChat'])
+    async def cog_init_ready(self):
+        """Sets variables properly"""
+        await self.bot.wait_until_ready()
+        if not self.guild:
+            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        if not self.elder_channel:
+            self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
 
     async def on_war_state_change(self, current_state, war):
         """ Assign inWar role to those participating in the current war """
-        self.bot.logger.debug(f"Current State: {current_state}\nWar State: {war.state}")
         conn = self.bot.pool
-        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
-        war_role = guild.get_role(settings['oak_roles']['inwar'])
+        if not self.guild:
+            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        war_role = self.guild.get_role(settings['oak_roles']['inwar'])
         if current_state == "preparation":
             self.bot.logger.debug("War state changed to preparation")
+            test_chat = self.bot.get_channel(364507837550034956)
+            await test_chat.send("Oak is in preparation")
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
             sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
                    f"FROM rcs_discord_links "
@@ -34,11 +43,11 @@ class WarSetup(commands.Cog):
             names = []
             try:
                 for row in rows:
-                    user = guild.get_member(int(row['discord_id']))
+                    user = self.guild.get_member(int(row['discord_id']))
                     await user.add_roles(war_role, reason="Auto add role for war.")
                     names.append(user.display_name)
             except:
-                self.bot.logger.exception("Failed while adding roles")
+                self.bot.logger.exception(f"Failed while adding roles - {row}")
             try:
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
@@ -54,6 +63,8 @@ class WarSetup(commands.Cog):
                 self.bot.logger.exception("Send Embed")
         elif current_state == "inWar":
             self.bot.logger.debug("War state changed to in war")
+            test_chat = self.bot.get_channel(364507837550034956)
+            await test_chat.send("Oak is in war")
             # Remove all roles and re-add to compensate for missed prep
             members = war_role.members
             try:
@@ -89,6 +100,8 @@ class WarSetup(commands.Cog):
             except:
                 self.bot.logger.exception("Send Embed")
         else:
+            test_chat = self.bot.get_channel(364507837550034956)
+            await test_chat.send("Oak is not in prep or war")
             # refresh role object, pull members with that role, remove the role
             members = war_role.members
             if members:
@@ -96,7 +109,7 @@ class WarSetup(commands.Cog):
                     for user in members:
                         await user.remove_roles(war_role, reason="Auto remove role after end of war.")
                 except:
-                    self.bot.logger.exception("War Roles")
+                    self.bot.logger.exception("War Role Removal")
                 await self.elder_channel.send("inWar roles removed for all players.")
                 self.bot.logger.info("inWar role removed automatically")
 

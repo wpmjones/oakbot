@@ -28,7 +28,8 @@ if enviro == "LIVE":
     prefix = "/"
     log_level = "INFO"
     coc_names = "vps"
-    initial_extensions.extend("cogs.warrole")
+    initial_extensions.append("cogs.warrole")
+    initial_extensions.append("cogs.throle")
 elif enviro == "home":
     token = settings['discord']['test_token']
     prefix = ">"
