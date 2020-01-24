@@ -17,18 +17,15 @@ class General(commands.Cog):
         if message.author.name in ["The Arborist", "Oak WarBot", "Test Bot"]:
             return
         if "funnel" in message.content:
-            await message.channel.send("Learn how to funnel here - https://youtu.be/0rWN9FLMGT4 - "
-                                       "or your leader will be very mad!")
-            return
+            return await message.channel.send("Learn how to funnel here - https://youtu.be/0rWN9FLMGT4 - "
+                                              "or your leader will be very mad!")
         if "rules" in message.content:
-            await message.channel.send("Reddit Oak rules can be found here - "
-                                       "https://www.reddit.com/r/CoC_RedditOak/wiki/moderation/general_rules")
-            return
+            return await message.channel.send("Reddit Oak rules can be found here - "
+                                              "https://www.reddit.com/r/CoC_RedditOak/wiki/moderation/general_rules")
         if any(word in message.content for word in ["signup", "sign-up", "sign up"]):
-            await message.channel.send(f"Please use `/war c#` or `/war call #` to call targets in "
-                                       f"<#{str(settings['oak_channels']['coc_chat'])}> or "
-                                       f"<#{str(settings['oak_channels']['oak_war'])}>")
-            return
+            return await message.channel.send(f"Please use `/war c#` or `/war call #` to call targets in "
+                                              f"<#{str(settings['oak_channels']['coc_chat'])}> or "
+                                              f"<#{str(settings['oak_channels']['oak_war'])}>")
         if "!th8" in message.content:
             await message.channel.send("https://photos.google.com/share/AF1QipPWoqacyT79PJJ4gL9P2hfHqWt_OkEFr-"
                                        "fjJSbFIgGhnF2aNM6MXMZtCzKKNo7JXw?key=N3JDOGRZd3oyMjc3dC1XZEhOVkl6cUNsb1lOSkFn")

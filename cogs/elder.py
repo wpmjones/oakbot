@@ -33,8 +33,8 @@ class Elder(commands.Cog):
             warn_list = "Lists all strikes for all users. Sorted by user (alphabetically)."
             embed.add_field(name="/warn", value=warn_list, inline=False)
             warn_add = ("Adds a strike to the specified player with the specified reason. The bot will "
-                        "respond with a list of all strikes for that player. No DM is sent at this time! "
-                        "That will be a future enhancement. Please notify them in some other way.")
+                        "respond with a list of all strikes for that player. A DM will be sent to the player "
+                        "so they know that they have received a warning.")
             embed.add_field(name="/warn <in-game name> <reason for warning>", value=warn_add, inline=False)
             warn_remove = ("Removes the specified warning (warning ID). You will need to do /warn list "
                            "first to obtain the warning ID.")
