@@ -143,70 +143,59 @@ class Elder(commands.Cog):
             await ctx.send("That is not a valid Discord user. Please try again.")
 
     @commands.command(name="kick", aliases=["ban"], hidden=True)
-    async def kick(self, ctx, player, *reason):
+    @is_elder"()"
+    async def kick(self, ctx, player, *, reason: str = ""):
         """Command to remove players from the clan.
         This will move member on the Oak Table to Old Members,
         add a reason if provided,
         and remove their Member role from Discord."""
-        if authorized(ctx.author.roles):
-            if ctx.command == "ban":
-                ban = 1
-            else:
-                ban = 0
-            with Sql(as_dict=True) as cursor:
-                cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = %s", (player, ))
-                fetched = cursor.fetchone()
-            if fetched is not None:
-                discord_id = fetched['slackId']
-                player_tag = fetched['tag']
-                if reason is not None:
-                    reason = "%20".join(reason)
+        if ctx.command == "ban":
+            ban = 1
+        else:
+            ban = 0
+        with Sql(as_dict=True) as cursor:
+            cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = %s", (player, ))
+            fetched = cursor.fetchone()
+        if fetched is not None:
+            discord_id = fetched['slackId']
+            player_tag = fetched['tag']
+            result = sheet.values().get(spreadsheetId=spreadsheetId, range=currMemberRange).execute()
+            values = result.get("values", [])
+            row_num = 3
+            found = 0
+            for row in values:
+                if player.lower() == row[0].lower():
+                    found = 1
+                    break
                 else:
-                    reason = ""
-                result = sheet.values().get(spreadsheetId=spreadsheetId, range=currMemberRange).execute()
-                values = result.get("values", [])
-                row_num = 3
-                found = 0
-                for row in values:
-                    if player.lower() == row[0].lower():
-                        found = 1
-                        break
-                    else:
-                        row_num += 1
-                if found == 1:
-                    # Make call to Google Sheet with info to perform move action
-                    url = (f"{settings['google']['oak_table']}?call=kick&rowNum={str(row_num)}&reason={reason}"
-                           f"&ban={str(ban)}")
-                    async with ctx.session.get(url) as r:
-                        if r.status != 200:
-                            await ctx.send("Please check the Oak Table. Removal was not successful.")
-                    reason = reason.replace("%20", " ")
-                    content = f"{player} (#{player_tag}) has been moved to old members."
-                    guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
-                    is_user, user = is_discord_user(guild, int(discord_id))
-                    # TODO else for is_user
-                    if is_user and ban == 0:
-                        await user.remove_roles(guild.get_role(settings['oak_roles']['member']), reason=reason)
-                        content += " Member role has been removed."
-                    if is_user and ban == 1:
-                        await user.kick(reason=reason)
-                        content += f" {user.mention} kicked from server. If Discord ban is necessary, now is the time!"
-                    self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                         f"{player} {ctx.command}ed for {reason}")
-                    await ctx.send(content)
-                else:
-                    self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                            f"Problem: {player} not found in Oak Table")
-                    return await ctx.send("Player name not found in Oak Table. Please try again.")
+                    row_num += 1
+            if found == 1:
+                # Make call to Google Sheet with info to perform move action
+                url = (f"{settings['google']['oak_table']}?call=kick&rowNum={str(row_num)}&reason={reason}"
+                       f"&ban={str(ban)}")
+                async with ctx.session.get(url) as r:
+                    if r.status != 200:
+                        await ctx.send("Please check the Oak Table. Removal was not successful.")
+                content = f"{player} (#{player_tag}) has been moved to old members."
+                guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
+                is_user, user = is_discord_user(guild, int(discord_id))
+                if is_user and ban == 0:
+                    await user.remove_roles(guild.get_role(settings['oak_roles']['member']), reason=reason)
+                    content += " Member role has been removed."
+                if is_user and ban == 1:
+                    await user.kick(reason=reason)
+                    content += f" {user.mention} kicked from server. If Discord ban is necessary, now is the time!"
+                self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                     f"{player} {ctx.command}ed for {reason}")
+                await ctx.send(content)
             else:
                 self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                        f"Problem: {player} not found in SQL Database")
-                return await ctx.send("You have provided an invalid player name.  Please try again.")
+                                        f"Problem: {player} not found in Oak Table")
+                return await ctx.send("Player name not found in Oak Table. Please try again.")
         else:
-            self.bot.logger.warning(f"User not authorized - "
-                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Request: {player} was {ctx.command}ed for {reason}")
-            await ctx.send("Wait a minute punk! You aren't allowed to use that command")
+            self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Problem: {player} not found in SQL Database")
+            return await ctx.send("You have provided an invalid player name.  Please try again.")
 
     @commands.command(name="warn", aliases=["warning", "warnings", "watch", "watchlist"], hidden=True)
     async def warn(self, ctx, player: str = "list", *warning):
