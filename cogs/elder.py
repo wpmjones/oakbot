@@ -143,7 +143,7 @@ class Elder(commands.Cog):
             await ctx.send("That is not a valid Discord user. Please try again.")
 
     @commands.command(name="kick", aliases=["ban"], hidden=True)
-    @is_elder"()"
+    @is_elder()
     async def kick(self, ctx, player, *, reason: str = ""):
         """Command to remove players from the clan.
         This will move member on the Oak Table to Old Members,
