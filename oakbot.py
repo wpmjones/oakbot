@@ -14,7 +14,7 @@ from datetime import datetime
 from loguru import logger
 from config import settings
 
-enviro = "home"
+enviro = "LIVE"
 
 initial_extensions = ["cogs.general",
                       "cogs.members",
