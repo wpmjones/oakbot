@@ -22,3 +22,8 @@ leagues_to_emoji = {
     "Bronze League III": "bronze3",
     "Unranked": "unranked"
 }
+
+clans = {
+    "Reddit Oak": "#CVCJR89",
+    "Reddit Quercus": "#GVCPPG98",
+}
