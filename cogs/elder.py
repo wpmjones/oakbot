@@ -1,10 +1,12 @@
 import discord
 import asyncio
+import coc
 import season
 
 from discord.ext import commands
 from cogs.utils.db import Sql, Psql
 from cogs.utils.checks import is_elder
+from cogs.utils.converters import ClanConverter
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from httplib2 import Http
@@ -61,13 +63,46 @@ class Elder(commands.Cog):
         await ctx.send(embed=embed)
         self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
 
+    @commands.command(name="cwl", hidden=True)
+    @is_elder()
+    async def cwl(self, ctx, clan: ClanConverter() = None):
+        """Provides info on cwl status"""
+        def breakdown(members, process = None):
+            res = {}
+            for m in members:
+                if m.is_opponent:
+                    th = m.town_hall if m.town_hall > 8 else 8
+                    if th not in res:
+                        res[th] = 0
+                    val = 1 if process is None else process(m)
+                    res[th] += val
+            return "/".join(('{}'.format(res.get(th,0)) for th in range(13, 8, -1)))
+
+        if not clan:
+            clan = await self.bot.coc.get_clan("#CVCJR89")
+        print(clan.tag)
+        try:
+            cwl_group = await self.bot.coc.get_league_group(clan.tag)
+            print(cwl_group.rounds)
+        except coc.NotFound:
+            return await ctx.send("Not currently in CWL")
+        content = "**TH count:\n13/12/11/10/9/Other**\n"
+        war_num = 1
+        async for war in cwl_group.get_wars():
+            print(f"{war.clan.tag} - {war.tag}")
+            if war.clan.tag == "#CVCJR89":
+                bd = breakdown(war.members)
+                content += f"War #{war_num} vs {war.opponent.name}: {bd}\n"
+                war_num += 1
+        return await ctx.send(content)
+
     @commands.command(name="war", aliases=["xar"])
-    async def war(self, ctx, add, player_input, member: discord.Member):
+    async def war(self, ctx, arg, player_input, member: discord.Member):
         """This command mirrors the warbot command to link discord id to player tag
         Since the elders are already using the command, this snags the same line and
         uses the information to add records in the PostgreSQL database to link the same."""
         player_tag = ""
-        if authorized(ctx.author.roles) and add == "add":
+        if authorized(ctx.author.roles) and arg == "add":
             if player_input.startswith("#"):
                 player_tag = player_input[1:]
                 print(player_tag)
