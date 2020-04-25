@@ -24,7 +24,7 @@ class PlayerConverter(commands.Converter):
                                            "Care to try again?")
 
         for clan_tag in clans.values():
-            clan = ctx.coc.get_clan(clan_tag)
+            clan = await ctx.coc.get_clan(clan_tag)
             if clan.name == name or clan.tag == tag:
                 raise commands.BadArgument(f"You appear to be passing the clan tag/name for `{clan.name}`")
             member = clan.get_member(name=name)
