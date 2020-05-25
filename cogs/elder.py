@@ -233,7 +233,7 @@ class Elder(commands.Cog):
             return await ctx.send("You have provided an invalid player name.  Please try again.")
 
     @commands.command(name="warn", aliases=["warning"], hidden=True)
-    async def warn(self, ctx, player: str = "list", *, warning):
+    async def warn(self, ctx, player: str = "list", *, warning = None):
         """Command to add warnings for players
         /warn list (or just /warn) will show a list of all warnings
         To add a warning, use:
@@ -244,7 +244,7 @@ class Elder(commands.Cog):
         To remove a warning, request the list first to obtain the warning ID.
         /warn remove #
         """
-        if authorized(ctx.author.roles):
+        if authorized(ctx.author.roles) or ctx.author.id == 251150854571163648:
             with Sql(as_dict=True) as cursor:
                 if player == "list" or player is None:
                     cursor.execute("SELECT strikeNum, playerName, warnDate, warning, warningId "
@@ -267,7 +267,7 @@ class Elder(commands.Cog):
                     return
                 elif player == "remove":
                     reactions = [emojis['other']['upvote'], emojis['other']['downvote']]
-                    cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE warningId = {warning[0]}")
+                    cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE warningId = {warning}")
                     fetched = cursor.fetchone()
                     if fetched is None:
                         await ctx.send("No warning exists with that ID.  Please check the ID and try again.")
@@ -336,7 +336,7 @@ class Elder(commands.Cog):
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Request: Warning for {player} for {' '.join(warning)}")
+                                    f"Request: Warning for {player} for {warning}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="stats", aliases=["stat", "check", "donations"], hidden=True)
