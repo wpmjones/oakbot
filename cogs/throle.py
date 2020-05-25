@@ -1,4 +1,6 @@
 from discord.ext import commands
+from cogs.utils.constants import clans
+from cogs.utils.db import get_discord_id
 from config import settings
 
 
@@ -40,21 +42,20 @@ class ThRoles(commands.Cog):
     @commands.command(name="add_th_roles")
     @commands.is_owner()
     async def add_roles(self, ctx):
-        conn = self.bot.pool
-        sql = "SELECT discord_id, '#' || player_tag as player_tag FROM rcs_discord_links"
-        rows = await conn.fetch(sql)
-        for player in rows:
-            member = await self.bot.coc.get_player(player["player_tag"])
-            if member.town_hall < 7:
+        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+        for member in clan.itermembers:
+            discord_id = get_discord_id(member.tag)
+            if not discord_id:
+                await ctx.send(f"No linked Discord ID for {member.name} ({member.tag})")
+            player = await self.bot.coc.get_player(member.tag)
+            if player.town_hall < 7:
                 continue
-            if member.clan and member.clan.tag != "#CVCJR89":
-                continue
-            user = self.guild.get_member(player["discord_id"])
+            user = self.guild.get_member(discord_id)
             if not user:
                 continue
-            new_role = await self.get_th_role(member.town_hall)
+            new_role = await self.get_th_role(player.town_hall)
             await user.add_roles(new_role, reason="Auto assign from command")
-            self.bot.logger.debug(f"TH{member.town_hall} role added for {member.name}")
+            self.bot.logger.debug(f"TH{player.town_hall} role added for {player.name}")
         await ctx.send("Town hall roles added. Bam!")
 
     async def get_th_role(self, th_level):
