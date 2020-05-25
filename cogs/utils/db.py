@@ -1,7 +1,16 @@
 import asyncpg
 import pymssql
+import requests
 
 from config import settings
+
+
+def get_link_token():
+    """Retrieve new token for links API"""
+    payload = {"username": settings['links']['user'], "password": settings['links']['pass']}
+    url = "https://api.amazingspinach.com/login"
+    r = requests.post(url, json=payload)
+    return r.json()['token']
 
 
 class Sql:

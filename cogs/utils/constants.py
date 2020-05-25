@@ -27,3 +27,8 @@ clans = {
     "Reddit Oak": "#CVCJR89",
     "Reddit Quercus": "#GVCPPG98",
 }
+
+tubas = {
+    "TubaKid": "#U8GJYQ8Q",
+    "TubaToo": "#RVP02LU0",
+}
