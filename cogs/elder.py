@@ -63,76 +63,76 @@ class Elder(commands.Cog):
         await ctx.send(embed=embed)
         self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
 
-    @commands.command(name="cwl", hidden=True)
-    @is_elder()
-    async def cwl(self, ctx, clan: ClanConverter() = None):
-        """Provides info on cwl status"""
-        def breakdown(members, process = None):
-            res = {}
-            for m in members:
-                if m.is_opponent:
-                    th = m.town_hall if m.town_hall > 8 else 8
-                    if th not in res:
-                        res[th] = 0
-                    val = 1 if process is None else process(m)
-                    res[th] += val
-            return "/".join(('{}'.format(res.get(th,0)) for th in range(13, 8, -1)))
+    # @commands.command(name="cwl", hidden=True)
+    # @is_elder()
+    # async def cwl(self, ctx, clan: ClanConverter() = None):
+    #     """Provides info on cwl status"""
+    #     def breakdown(members, process = None):
+    #         res = {}
+    #         for m in members:
+    #             if m.is_opponent:
+    #                 th = m.town_hall if m.town_hall > 8 else 8
+    #                 if th not in res:
+    #                     res[th] = 0
+    #                 val = 1 if process is None else process(m)
+    #                 res[th] += val
+    #         return "/".join(('{}'.format(res.get(th,0)) for th in range(13, 8, -1)))
+    #
+    #     if not clan:
+    #         clan = await self.bot.coc.get_clan("#CVCJR89")
+    #     print(clan.tag)
+    #     try:
+    #         cwl_group = await self.bot.coc.get_league_group(clan.tag)
+    #         print(cwl_group.rounds)
+    #     except coc.NotFound:
+    #         return await ctx.send("Not currently in CWL")
+    #     content = "**TH count:\n13/12/11/10/9/Other**\n"
+    #     war_num = 1
+    #     async for war in cwl_group.get_wars():
+    #         print(f"{war.clan.tag} - {war.tag}")
+    #         if war.clan.tag == "#CVCJR89":
+    #             bd = breakdown(war.members)
+    #             content += f"War #{war_num} vs {war.opponent.name}: {bd}\n"
+    #             war_num += 1
+    #     return await ctx.send(content)
 
-        if not clan:
-            clan = await self.bot.coc.get_clan("#CVCJR89")
-        print(clan.tag)
-        try:
-            cwl_group = await self.bot.coc.get_league_group(clan.tag)
-            print(cwl_group.rounds)
-        except coc.NotFound:
-            return await ctx.send("Not currently in CWL")
-        content = "**TH count:\n13/12/11/10/9/Other**\n"
-        war_num = 1
-        async for war in cwl_group.get_wars():
-            print(f"{war.clan.tag} - {war.tag}")
-            if war.clan.tag == "#CVCJR89":
-                bd = breakdown(war.members)
-                content += f"War #{war_num} vs {war.opponent.name}: {bd}\n"
-                war_num += 1
-        return await ctx.send(content)
-
-    @commands.command(name="war", aliases=["xar"])
-    async def war(self, ctx, arg, player_input, member: discord.Member):
-        """This command mirrors the warbot command to link discord id to player tag
-        Since the elders are already using the command, this snags the same line and
-        uses the information to add records in the PostgreSQL database to link the same."""
-        player_tag = ""
-        if authorized(ctx.author.roles) and arg == "add":
-            if player_input.startswith("#"):
-                player_tag = player_input[1:]
-                print(player_tag)
-            else:
-                oak_tag = "#CVCJR89"
-                try:
-                    player = await self.bot.coc.get_player(f"#{player_input}")
-                    if player.clan.tag == oak_tag:
-                        player_tag = player_input
-                        print(player_tag)
-                except:
-                    # Assume input provided is the player name
-                    # members = await self.bot.coc.get_members(oak_tag)
-                    members = (await self.bot.coc.get_clan(oak_tag)).members
-                    try:
-                        player_tag = members[[member.name for member in members].index(player_input)].tag[1:]
-                        print(player_tag)
-                    except:
-                        print("fail")
-                        self.bot.logger.info(f"{player_input} is not valid for the war add command."
-                                             f"Attempted by {ctx.author} in {ctx.channel}.")
-                        return
-            await Psql(self.bot).link_user(player_tag, member.id)
-            self.bot.logger.debug(f"Discord ID successfully added to db for {player_input}.")
-
-    @war.error
-    async def war_error(self, ctx, error):
-        if isinstance(error, commands.BadArgument):
-            self.bot.logger.warning(f"{ctx.author} issued the /war command, but there was a problem "
-                                    f"with the Discord user.")
+    # @commands.command(name="war", aliases=["xar"])
+    # async def war(self, ctx, arg, player_input, member: discord.Member):
+    #     """This command mirrors the warbot command to link discord id to player tag
+    #     Since the elders are already using the command, this snags the same line and
+    #     uses the information to add records in the PostgreSQL database to link the same."""
+    #     player_tag = ""
+    #     if authorized(ctx.author.roles) and arg == "add":
+    #         if player_input.startswith("#"):
+    #             player_tag = player_input[1:]
+    #             print(player_tag)
+    #         else:
+    #             oak_tag = "#CVCJR89"
+    #             try:
+    #                 player = await self.bot.coc.get_player(f"#{player_input}")
+    #                 if player.clan.tag == oak_tag:
+    #                     player_tag = player_input
+    #                     print(player_tag)
+    #             except:
+    #                 # Assume input provided is the player name
+    #                 # members = await self.bot.coc.get_members(oak_tag)
+    #                 members = (await self.bot.coc.get_clan(oak_tag)).members
+    #                 try:
+    #                     player_tag = members[[member.name for member in members].index(player_input)].tag[1:]
+    #                     print(player_tag)
+    #                 except:
+    #                     print("fail")
+    #                     self.bot.logger.info(f"{player_input} is not valid for the war add command."
+    #                                          f"Attempted by {ctx.author} in {ctx.channel}.")
+    #                     return
+    #         await Psql(self.bot).link_user(player_tag, member.id)
+    #         self.bot.logger.debug(f"Discord ID successfully added to db for {player_input}.")
+    #
+    # @war.error
+    # async def war_error(self, ctx, error):
+    #     if isinstance(error, commands.BadArgument):
+    #         self.bot.logger.warning(f"{ctx.author} issued the /war command, but there was a problem "
+    #                                 f"with the Discord user.")
 
     @commands.command(name="giphy", hidden=True)
     async def giphy(self, ctx, gif_text):
@@ -232,17 +232,18 @@ class Elder(commands.Cog):
                                     f"Problem: {player} not found in SQL Database")
             return await ctx.send("You have provided an invalid player name.  Please try again.")
 
-    @commands.command(name="warn", aliases=["warning", "warnings", "watch", "watchlist"], hidden=True)
-    async def warn(self, ctx, player: str = "list", *warning):
+    @commands.command(name="warn", aliases=["warning"], hidden=True)
+    async def warn(self, ctx, player: str = "list", *, warning):
         """Command to add warnings for players
         /warn list (or just /warn) will show a list of all warnings
         To add a warning, use:
         /warn TubaKid This is a warning
+        /warn #RVP02LQU This is also a warning
         For names with spaces, use quotes:
         /warn "Professor Mahon" This is another warning
         To remove a warning, request the list first to obtain the warning ID.
-        /warn remove #"""
-        # TODO Fix it so that apostrophes in the warning don't cause an error
+        /warn remove #
+        """
         if authorized(ctx.author.roles):
             with Sql(as_dict=True) as cursor:
                 if player == "list" or player is None:
@@ -302,18 +303,24 @@ class Elder(commands.Cog):
                     await sent_msg.edit(content=f"Warning **{fetched['warning']}** "
                                                 f"removed for **{fetched['playerName']}**.")
                 else:
-                    warning = " ".join(warning)
+                    # add a player warning
                     warning.replace("'", "''")
-                    cursor.execute(f"SELECT tag, slackId FROM coc_oak_players WHERE playerName = '{player}'")
+                    if player.startswith("#"):
+                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE tag = %s"
+                        cursor.execute(sql, (player[1:], ))
+                    else:
+                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE playerName = %s"
+                        cursor.execute(sql, (player, ))
                     fetched = cursor.fetchone()
                     if fetched is not None:
                         cursor.execute(f"INSERT INTO coc_oak_warnings (tag, warnDate, warning) "
                                        f"VALUES ('{fetched['tag']}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
                                        f"'{warning}')")
-                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = '{player}'")
+                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = %s",
+                                       (fetched['playerName'], ))
                         strike_list = cursor.fetchall()
                         member = ctx.guild.get_member(int(fetched['slackId']))
-                        await ctx.send("Warning added for " + player)
+                        await ctx.send("Warning added for " + fetched['playerName'])
                         await member.send("Warning added!")
                         emoji = ":x:"
                         for strike in strike_list:
@@ -321,12 +328,11 @@ class Elder(commands.Cog):
                             await member.send(f"{emoji} {strike['warnDate']} - {strike['warning']}")
                             emoji += ":x:"
                         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                              f"Request: {player} warned for {warning}")
+                                              f"Request: {fetched['playerName']} warned for {warning}")
                     else:
                         self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                                 f"Problem: {player} not found in SQL database | Warning: {warning}")
-                        await ctx.send("You have provided an invalid player name.  Please try again.")
-                        return
+                        return await ctx.send("You have provided an invalid player name.  Please try again.")
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
