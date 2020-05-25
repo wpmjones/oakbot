@@ -30,25 +30,43 @@ if enviro == "LIVE":
     coc_names = "vps"
     initial_extensions.append("cogs.warrole")
     initial_extensions.append("cogs.throle")
+    initial_extensions.append("cogs.background")
+    coc_email = settings['supercell']['user']
+    coc_pass = settings['supercell']['pass']
 elif enviro == "home":
     token = settings['discord']['test_token']
     prefix = ">"
     log_level = "DEBUG"
     coc_names = "ubuntu"
+    initial_extensions.append("cogs.war")
+    coc_email = settings['supercell']['user2']
+    coc_pass = settings['supercell']['pass2']
 else:
     token = settings['discord']['test_token']
     prefix = ">"
     log_level = "DEBUG"
     coc_names = "dev"
+    coc_email = settings['supercell']['user2']
+    coc_pass = settings['supercell']['pass2']
 
 description = """Welcome to The Arborist - by TubaKid
 
 All commands must begin with a slash"""
 
-coc_client = coc.login(settings['supercell']['user'],
-                       settings['supercell']['pass'],
-                       client=coc.EventsClient,
+
+class CustomClient(coc.EventsClient):
+    def _create_status_tasks(self, cached_war, war):
+        if cached_war.state != war.state:
+            self.dispatch("on_war_state_change", war.state, war)
+
+        super()._create_status_tasks(cached_war, war)
+
+
+coc_client = coc.login(coc_email,
+                       coc_pass,
+                       client=CustomClient,
                        key_names=coc_names,
+                       key_count=2,
                        correct_tags=True)
 
 
@@ -58,6 +76,7 @@ class OakBot(commands.Bot):
                          description=description,
                          case_insensitive=True)
         self.remove_command("help")
+        coc_client.bot = self
         self.coc = coc_client
         self.logger = logger
         self.session = aiohttp.ClientSession(loop=self.loop)

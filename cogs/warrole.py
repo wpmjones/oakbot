@@ -81,7 +81,7 @@ class WarSetup(commands.Cog):
             names = []
             try:
                 for row in rows:
-                    user = guild.get_member(int(row['discord_id']))
+                    user = self.guild.get_member(int(row['discord_id']))
                     await user.add_roles(war_role, reason="Auto add role for war.")
                     names.append(user.display_name)
             except:

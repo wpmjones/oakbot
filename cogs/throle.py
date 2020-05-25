@@ -38,6 +38,7 @@ class ThRoles(commands.Cog):
         await user.add_roles(new_role, reason="Auto assign from TH upgrade event")
 
     @commands.command(name="add_th_roles")
+    @commands.is_owner()
     async def add_roles(self, ctx):
         conn = self.bot.pool
         sql = "SELECT discord_id, '#' || player_tag as player_tag FROM rcs_discord_links"
