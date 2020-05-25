@@ -13,6 +13,18 @@ def get_link_token():
     return r.json()['token']
 
 
+def get_discord_id(tag):
+    """Get discord ID from player tag
+    Returns single Discord ID because a player tag will only ever have one Discord ID"""
+    token = get_link_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    base_url = "https://api.amazingspinach.com/links/"
+    url = base_url + tag
+    r = requests.get(url, headers=headers)
+    data = r.json()
+    return data['discordId']
+
+
 class Sql:
     def __init__(self, as_dict=False):
         self.as_dict = as_dict

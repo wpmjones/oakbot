@@ -1,8 +1,6 @@
-import discord
-
 from discord.ext import commands, tasks
 from cogs.utils.constants import clans
-from cogs.utils.db import get_link_token
+from cogs.utils.db import get_discord_id
 from config import settings
 
 
@@ -22,22 +20,6 @@ class Background(commands.Cog):
         if not self.guild:
             self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
 
-    async def get_discord_id(self, tag):
-        """Get discord ID from player tag
-        Returns single Discord ID because a player tag will only ever have one Discord ID"""
-        token = get_link_token()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        async with self.bot.session as session:
-            base_url = "https://api.amazingspinach.com/links/"
-            url = base_url + tag
-            async with session.get(url, headers=headers) as r:
-                if r.status < 300:
-                    data = await r.json()
-                else:
-                    raise ValueError(f"Links API Error: {r.status} when looking for {tag}. "
-                                     f"Please make sure they are properly linked.")
-        return data['discordId']
-
     @tasks.loop(hours=2.0)
     async def check_quercus(self):
         clan = await self.bot.coc.get_clan(clans['Reddit Quercus'])
@@ -45,7 +27,7 @@ class Background(commands.Cog):
         not_in_links = []
         for member in clan.members:
             try:
-                discord_id = await self.get_discord_id(member.tag)
+                discord_id = get_discord_id(member.tag)
                 discord_member = self.guild.get_member(discord_id)
                 if quercus_role not in discord_member.roles:
                     await discord_member.add_roles(quercus_role, "Auto-add in background. You're welcome!")
@@ -64,7 +46,7 @@ class Background(commands.Cog):
         not_in_links = []
         for member in clan.members:
             try:
-                discord_id = await self.get_discord_id(member.tag)
+                discord_id = get_discord_id(member.tag)
                 discord_member = self.guild.get_member(discord_id)
                 if quercus_role in discord_member.roles:
                     await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
