@@ -43,15 +43,19 @@ class ThRoles(commands.Cog):
     @commands.is_owner()
     async def add_roles(self, ctx):
         clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+        print(self.guild.id)
         for member in clan.itermembers:
+            print(f"{member.name} ({member.tag})")
             discord_id = get_discord_id(member.tag)
+            print(f" - {discord_id}")
             if not discord_id:
                 await ctx.send(f"No linked Discord ID for {member.name} ({member.tag})")
             player = await self.bot.coc.get_player(member.tag)
             if player.town_hall < 7:
                 continue
-            user = self.guild.get_member(discord_id)
+            user = self.guild.get_member(int(discord_id))
             if not user:
+                self.bot.logger.debug(f"Couldn't retrieve Discord user for {player.name} ({discord_id})")
                 continue
             new_role = await self.get_th_role(player.town_hall)
             await user.add_roles(new_role, reason="Auto assign from command")

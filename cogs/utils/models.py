@@ -27,7 +27,7 @@ class Timestamp:
 
 
 class WarData(coc.ClanWar):
-    __slots__ = coc.ClanWar.__slots__ + ("bot", )
+    __slots__ = coc.ClanWar.__slots__ + ("bot", "calls_by_target", "calls_by_attacker", "calls")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -59,7 +59,7 @@ class WarData(coc.ClanWar):
 
     async def init_calls(self):
         sql = ("SELECT call_id, caller_pos, target_pos, call_expiration, reserve, reserve_reason FROM oak_calls "
-               "WHERE war_id = $1 AND call_expiration > $2 AND cancelled = False AND attack_complete = False"
+               "WHERE war_id = $1 AND call_expiration > $2 AND cancelled = False AND attack_complete = False "
                "ORDER BY target_pos")
         war_id = await self.get_war_id(self.preparation_start_time.time)
         fetch = await self.bot.pool.fetch(sql, war_id, datetime.utcnow())

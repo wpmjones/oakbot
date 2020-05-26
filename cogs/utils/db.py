@@ -10,7 +10,6 @@ def get_link_token():
     payload = {"username": settings['links']['user'], "password": settings['links']['pass']}
     url = "https://api.amazingspinach.com/login"
     r = requests.post(url, json=payload)
-    print(r.json()['token'])
     return r.json()['token']
 
 
@@ -25,7 +24,10 @@ def get_discord_id(tag):
     url = base_url + tag
     r = requests.get(url, headers=headers)
     data = r.json()
-    return data['discordId']
+    if data:
+        return data[0]['discordId']
+    else:
+        return None
 
 
 class Sql:
