@@ -1,5 +1,4 @@
 import traceback
-import git
 import os
 import sys
 import coc
@@ -181,7 +180,6 @@ if __name__ == "__main__":
     try:
         pool = loop.run_until_complete(Psql.create_pool())
         bot = OakBot()
-        bot.repo = git.Repo(os.getcwd())
         bot.pool = pool
         bot.loop = loop
         bot.run(token, reconnect=True)

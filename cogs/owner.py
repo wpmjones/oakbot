@@ -1,6 +1,5 @@
-import traceback
 import discord
-from datetime import datetime
+
 from discord.ext import commands
 
 
@@ -14,19 +13,6 @@ class OwnerCog(commands.Cog):
         async for message in ctx.channel.history(limit=num_msgs):
             await message.delete()
         await ctx.send(f"{num_msgs} message(s) deleted", delete_after=10)
-
-    @commands.command(name="pull", hidden=True)
-    @commands.is_owner()
-    async def git_pull(self, ctx):
-        """Command to pull latest updates from master branch on GitHub"""
-        origin = self.bot.repo.remotes.origin
-        try:
-            origin.pull()
-            print("Code successfully pulled from GitHub")
-            await ctx.send("Code successfully pulled from GitHub")
-        except Exception as e:
-            print(f"ERROR: {type(e).__name__} - {e}")
-            await ctx.send(f"**`ERROR:`** {type(e).__name__} - {e}")
 
     @commands.command(name="presence", hidden=True)
     @commands.is_owner()
