@@ -14,7 +14,7 @@ from datetime import datetime
 from loguru import logger
 from config import settings
 
-enviro = "LIVE"
+enviro = "home"
 
 initial_extensions = ["cogs.general",
                       "cogs.members",
@@ -27,7 +27,7 @@ if enviro == "LIVE":
     token = settings['discord']['oakbot_token']
     prefix = "/"
     log_level = "INFO"
-    coc_names = "vps"
+    coc_names = "galaxy"
     initial_extensions.append("cogs.warrole")
     initial_extensions.append("cogs.throle")
     initial_extensions.append("cogs.background")
@@ -38,7 +38,6 @@ elif enviro == "home":
     prefix = ">"
     log_level = "DEBUG"
     coc_names = "ubuntu"
-    initial_extensions.append("cogs.war")
     coc_email = settings['supercell']['user2']
     coc_pass = settings['supercell']['pass2']
 else:
@@ -165,10 +164,8 @@ class OakBot(commands.Bot):
             pass
 
     async def on_ready(self):
-        logger.info("The Arborist is now planting trees")
         activity = discord.Game(" with fertilizer")
         await bot.change_presence(activity=activity)
-        self.logger.info(f'Ready: {self.user} (ID: {self.user.id})')
 
     async def after_ready(self):
         await self.wait_until_ready()
