@@ -1,7 +1,7 @@
 import discord
 
 from discord.ext import commands
-from cogs.utils.db import Sql
+from cogs.utils.db import get_discord_id, get_player_tag
 from cogs.utils.constants import leagues_to_emoji
 from cogs.utils.converters import PlayerConverter
 from config import settings, emojis, color_pick
@@ -211,7 +211,7 @@ class General(commands.Cog):
     async def siege_request(self, ctx, *, siege_req: str = "help"):
         """- For requesting siege machines
         Options:
-         - ground, ww, wall wrecker
+         - ww, wall wrecker
          - air1, blimp, battle blimp, bb
          - air2, stone, slam, slammer, stone slammer
          - barracks, sb
@@ -249,22 +249,34 @@ class General(commands.Cog):
         sent_msg = await ctx.send(f"One moment while I check to see who has those.")
         donors = []
         requestor = None
-        conn = self.bot.pool
-        # get requestor player tag from database
-        sql = "SELECT player_tag FROM rcs_discord_links WHERE discord_id = $1"
-        requestor_tag = await conn.fetchval(sql, user_id)
+        # get requestor player tag from Discord ID
         clan = await self.bot.coc.get_clan("#CVCJR89")
+        requestor_tag = get_player_tag(user_id)
+        # Remove any links for player tags that aren't currently in Oak
+        if len(requestor_tag) > 1:
+            clan_tags = [x.tag for x in clan.members]
+            for tag in requestor_tag:
+                if tag not in clan_tags:
+                    requestor_tag.remove(tag)
+        # If still more than one, prompt user for correct player
+        if len(requestor_tag) > 1:
+            prompt_text = "You have more than one player in Reddit Oak. Please select the correct player:"
+            counter = 1
+            for tag in requestor_tag:
+                player = await self.bot.coc.get_player(tag)
+                prompt_text += f"\n{counter}. {player.name} ({player.tag})"
+
+            prompt = ctx.prompt(prompt_text, additional_options=len(requestor_tag))
+            requestor_tag = requestor_tag[prompt]
         # find oak players with the requested siege machine
         async for player in clan.get_detailed_members(cache=True):
             if siege_name in player.home_troops_dict.keys():
-                sql = "SELECT discord_id FROM rcs_discord_links WHERE player_tag = $1"
-                discord_id = await conn.fetchval(sql, player.tag[1:])
+                discord_id = get_discord_id(player.tag)
                 donors.append(f"{player.name}: <@{discord_id}>")
-            if requestor_tag == player.tag[1:]:
+            if requestor_tag == player.tag:
                 requestor = player.name
         if not requestor:
             requestor = ctx.author.name
-        # self.bot.logger.debug(donors)
         await sent_msg.delete()
         embed = discord.Embed(title=f"{siege_name} Request",
                               description=f"{requestor} has requested a {siege_name}",
