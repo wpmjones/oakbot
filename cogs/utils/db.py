@@ -30,6 +30,19 @@ def get_discord_id(tag):
         return None
 
 
+def get_player_tag(discord_id):
+    """Get player tag from Discord ID
+    Returns multiple player tags if linked to more than one player"""
+    token = get_link_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    base_url = "https://api.amazingspinach.com/links/"
+    url = f"{base_url}{discord_id}"
+    r = requests.get(url, headers=headers)
+    data = r.json()
+    tags = [x['playerTag'] for x in data]
+    return tags
+
+
 class Sql:
     def __init__(self, as_dict=False):
         self.as_dict = as_dict
