@@ -10,9 +10,11 @@ class Background(commands.Cog):
         self.bot = bot
         self.guild = None
         self.check_quercus.start()
+        self.check_oak.start()
 
     def cog_unload(self):
         self.check_quercus.cancel()
+        self.check_oak.cancel()
 
     async def cog_init_ready(self) -> None:
         """Sets the guild properly"""

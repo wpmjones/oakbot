@@ -1,5 +1,7 @@
 import discord
+
 from discord.ext import commands
+from cogs.utils.db import get_discord_id
 from config import settings
 
 
@@ -36,18 +38,14 @@ class WarSetup(commands.Cog):
             test_chat = self.bot.get_channel(364507837550034956)
             await test_chat.send("Oak is in preparation")
             player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
-            sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
-                   f"FROM rcs_discord_links "
-                   f"WHERE player_tag = ANY($1)")
-            rows = await conn.fetch(sql, player_tags)
             names = []
-            try:
-                for row in rows:
-                    user = self.guild.get_member(int(row['discord_id']))
-                    await user.add_roles(war_role, reason="Auto add role for war.")
-                    names.append(user.display_name)
-            except:
-                self.bot.logger.exception(f"Failed while adding roles - {row}")
+            for member in war.members:
+                if member.is_opponent:
+                    continue
+                discord_id = get_discord_id(member.tag)
+                user = self.guild.get_member(discord_id)
+                await user.add_roles(war_role, reason="Auto add role for war.")
+                names.append(user.display_name)
             try:
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
@@ -61,45 +59,7 @@ class WarSetup(commands.Cog):
                     self.bot.logger.warning("No players found in names list")
             except:
                 self.bot.logger.exception("Send Embed")
-        elif current_state == "inWar":
-            self.bot.logger.debug("War state changed to in war")
-            test_chat = self.bot.get_channel(364507837550034956)
-            await test_chat.send("Oak is in war")
-            # Remove all roles and re-add to compensate for missed prep
-            members = war_role.members
-            try:
-                for user in members:
-                    await user.remove_roles(war_role, reason="Auto remove role after end of war.")
-            except:
-                self.bot.logger.exception("War Roles")
-            # Re-add roles for current war
-            player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
-            sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
-                   f"FROM rcs_discord_links "
-                   f"WHERE player_tag = ANY($1)")
-            rows = await conn.fetch(sql, player_tags)
-            names = []
-            try:
-                for row in rows:
-                    user = self.guild.get_member(int(row['discord_id']))
-                    await user.add_roles(war_role, reason="Auto add role for war.")
-                    names.append(user.display_name)
-            except:
-                self.bot.logger.exception("Failed while adding roles")
-            try:
-                if names:
-                    embed = discord.Embed(title="War roles added", color=discord.Color.red())
-                    embed.add_field(name="Members in War", value="\n".join(names), inline=False)
-                    hours_left = war.end_time.seconds_until // 3600
-                    minutes_left = (war.end_time.seconds_until - (hours_left * 3600)) // 60
-                    embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
-                    await self.elder_channel.send(embed=embed)
-                    self.bot.logger.info("inWar role added automatically")
-                else:
-                    self.bot.logger.warning("No players found in names list")
-            except:
-                self.bot.logger.exception("Send Embed")
-        else:
+        elif current_state in ("warEnded", "notInWar"):
             test_chat = self.bot.get_channel(364507837550034956)
             await test_chat.send("Oak is not in prep or war")
             # refresh role object, pull members with that role, remove the role

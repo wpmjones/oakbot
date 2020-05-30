@@ -25,7 +25,7 @@ def get_discord_id(tag):
     r = requests.get(url, headers=headers)
     data = r.json()
     if data:
-        return data[0]['discordId']
+        return int(data[0]['discordId'])
     else:
         return None
 

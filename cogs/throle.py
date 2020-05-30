@@ -26,13 +26,11 @@ class ThRoles(commands.Cog):
         self.bot.logger.info(f"{player} from {old_th} to {new_th}")
         conn = self.bot.pool
         coc_chat = self.bot.get_channel(settings["oak_channels"]["coc_chat"])
-        sql = "SELECT discord_id FROM rcs_discord_links WHERE player_tag = $1"
-        row = await conn.fetchrow(sql, player.tag[1:])
-        discord_id = row["discord_id"]
+        discord_id = get_discord_id(player.tag)
         if not self.guild:
             self.guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
         user = self.guild.get_member(discord_id)
-        msg = f"Congratulations to <@{user.mention} on upgrading to Town Hall {new_th}!"
+        msg = f"Congratulations to {user.mention} on upgrading to Town Hall {new_th}!"
         await coc_chat.send(msg)
         old_role = await self.get_th_role(old_th)
         new_role = await self.get_th_role(new_th)
@@ -53,7 +51,7 @@ class ThRoles(commands.Cog):
             player = await self.bot.coc.get_player(member.tag)
             if player.town_hall < 7:
                 continue
-            user = self.guild.get_member(int(discord_id))
+            user = self.guild.get_member(discord_id)
             if not user:
                 self.bot.logger.debug(f"Couldn't retrieve Discord user for {player.name} ({discord_id})")
                 continue
