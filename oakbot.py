@@ -76,6 +76,7 @@ class OakBot(commands.Bot):
         self.remove_command("help")
         coc_client.bot = self
         self.coc = coc_client
+        self.color = discord.Color.green()
         self.logger = logger
         self.session = aiohttp.ClientSession(loop=self.loop)
 
