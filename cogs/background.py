@@ -37,7 +37,13 @@ class Background(commands.Cog):
         for member in clan.members:
             try:
                 discord_id = get_discord_id(member.tag)
+                if not discord_id:
+                    not_in_links.append(f"{member.name} ({member.tag})")
+                    continue
                 discord_member = self.guild.get_member(discord_id)
+                if not discord_member:
+                    print(discord_id, type(discord_id))
+                    continue
                 if quercus_role not in discord_member.roles:
                     await discord_member.add_roles(quercus_role, "Auto-add in background. You're welcome!")
             except ValueError:
@@ -58,6 +64,9 @@ class Background(commands.Cog):
         for member in clan.members:
             try:
                 discord_id = get_discord_id(member.tag)
+                if not discord_id:
+                    not_in_links.append(f"{member.name} ({member.tag})")
+                    continue
                 discord_member = self.guild.get_member(discord_id)
                 if quercus_role in discord_member.roles:
                     await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
@@ -69,45 +78,6 @@ class Background(commands.Cog):
             new_line = "\n"
             await channel.send(f"The following players in Oak are not in the links API:\n"
                                f"{new_line.join(not_in_links)}")
-
-    # @tasks.loop(hours=3.0)
-    @commands.command(name="ttt")
-    @commands.is_owner()
-    async def oakdata_sql(self, ctx):
-        """Update SQL database with latest info from API"""
-        # Class for items with a level of 0
-        class NullItem:
-            level = 0
-            value = 0
-        now = datetime.utcnow()
-        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
-        with Sql(as_dict=True) as cursor:
-            sql1 = ("INSERT INTO coc_oak (tag, playerName, XPLevel, trophies, role, donations, donReceived, league, "
-                    "leagueIcon, thLevel, warStars, attackWins, defenseWins, bestTrophies, vsTrophies, bestVsTrophies, "
-                    "versusBattleWins, builderHall, timestamp) "
-                    "VALUES (%s,%s,%d,%d,%s,%d,%d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s)")
-            sql2 = ("UPDATE coc_oak "
-                    "SET barbKing = %d, archQueen = %d, grandWarden = %d, royalChamp = %d, battleMachine = %d, "
-                    "clanGames = %d, wallWrecker = %d, battleBlimp = %d, stoneSlammer = %d, siegeBarracks = %d, "
-                    "role = %s "
-                    "WHERE playerTag = %s AND timestamp = %s")
-            async for m in clan.get_detailed_members():
-                clan_games = m.achievements_dict.get("Games Champion", NullItem).value
-                barb_king = m.heroes_dict.get("Barbarian King", NullItem).level
-                arch_queen = m.heroes_dict.get("Archer Queen", NullItem).level
-                grand_warden = m.heroes_dict.get("Grand Warden", NullItem).level
-                royal_champ = m.heroes_dict.get("Royal Champion", NullItem).level
-                battle_mach = m.heroes_dict.get("Battle Machine", NullItem).level
-                wall_wrecker = m.siege_machines_dict.get("Wall Wrecker", NullItem).level
-                battle_blimp = m.siege_machines_dict.get("Battle Blimp", NullItem).level
-                stone_slammer = m.siege_machines_dict.get("Stone Slammer", NullItem).level
-                barracks = m.siege_machines_dict.get("Siege Barracks", NullItem).level
-                cursor.execute(sql1, (m.tag[1:], m.name, m.exp_level, m.trophies, m.role, m.donations, m.received,
-                                      m.league.name, m.league.badge.url, m.town_hall, m.war_stars, m.attack_wins,
-                                      m.defense_wins, m.best_trophies, m.versus_trophies, m.best_versus_trophies,
-                                      m.versus_attack_wins, m.builder_hall, now))
-                cursor.execute(sql2, (barb_king, arch_queen, grand_warden, royal_champ, battle_mach, clan_games,
-                                      wall_wrecker, battle_blimp, stone_slammer, barracks, m.role, m.tag[1:], now))
 
     @tasks.loop(hours=1.0)
     async def oak_data_push(self, ctx):
