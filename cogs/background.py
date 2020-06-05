@@ -16,10 +16,12 @@ class Background(commands.Cog):
         self.guild = None
         self.check_quercus.start()
         self.check_oak.start()
+        self.oak_data_push.start()
 
     def cog_unload(self):
         self.check_quercus.cancel()
         self.check_oak.cancel()
+        self.oak_data_push.cancel()
 
     async def cog_init_ready(self) -> None:
         """Sets the guild properly"""
@@ -27,73 +29,14 @@ class Background(commands.Cog):
         if not self.guild:
             self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
 
-    @tasks.loop(hours=2.0)
-    async def check_quercus(self):
-        clan = await self.bot.coc.get_clan(clans['Reddit Quercus'])
-        if not self.guild:
-            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
-        quercus_role = self.guild.get_role(settings['oak_roles']['quercus'])
-        not_in_links = []
-        for member in clan.members:
-            try:
-                discord_id = get_discord_id(member.tag)
-                if not discord_id:
-                    not_in_links.append(f"{member.name} ({member.tag})")
-                    continue
-                discord_member = self.guild.get_member(discord_id)
-                if not discord_member:
-                    print(discord_id, type(discord_id))
-                    continue
-                if quercus_role not in discord_member.roles:
-                    await discord_member.add_roles(quercus_role, "Auto-add in background. You're welcome!")
-            except ValueError:
-                not_in_links.append(f"{member.name} ({member.tag})")
-        if not_in_links:
-            channel = self.guild.get_channel(settings['oak_roles']['test_chat'])
-            new_line = "\n"
-            await channel.send(f"The following players in Quercus are not in the links API:\n"
-                               f"{new_line.join(not_in_links)}")
-
-    @check_quercus.before_loop
-    async def before_check_quercus(self):
-        await self.bot.wait_until_ready()
-
     @tasks.loop(hours=1.0)
-    async def check_oak(self):
-        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
-        if not self.guild:
-            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
-        quercus_role = self.guild.get_role(settings['oak_roles']['quercus'])
-        not_in_links = []
-        for member in clan.members:
-            try:
-                discord_id = get_discord_id(member.tag)
-                if not discord_id:
-                    not_in_links.append(f"{member.name} ({member.tag})")
-                    continue
-                discord_member = self.guild.get_member(discord_id)
-                if quercus_role in discord_member.roles:
-                    await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
-                                                                    "in Oak. You're welcome!")
-            except ValueError:
-                not_in_links.append(f"{member.name} ({member.tag})")
-        if not_in_links:
-            channel = self.guild.get_channel(settings['oak_roles']['test_chat'])
-            new_line = "\n"
-            await channel.send(f"The following players in Oak are not in the links API:\n"
-                               f"{new_line.join(not_in_links)}")
-
-    @check_oak.before_loop
-    async def before_check_oak(self):
-        await self.bot.wait_until_ready()
-
-    @tasks.loop(hours=1.0)
-    async def oak_data_push(self, ctx):
+    async def oak_data_push(self):
         """Update SQL database with latest info from API"""
         # Class for items with a level of 0
         class NullItem:
             level = 0
             value = 0
+
         now = datetime.utcnow()
         driver = "ODBC Driver 17 for SQL Server"
         conn = pyodbc.connect(f"DRIVER={driver};SERVER={settings['database']['server']};"
@@ -144,9 +87,70 @@ class Background(commands.Cog):
         payload = {"type": "players", "data": to_google}
         url = "https://script.google.com/macros/s/AKfycbzhXbO1CCcRuPzTU0mos7MowcucvclAKokkTiq91463xW1ftQEO/exec"
         r = requests.post(url, data=json.dumps(payload))
+        self.bot.logger.info("Oak data push complete.")
 
     @oak_data_push.before_loop
     async def before_oak_data_push(self):
+        await self.bot.wait_until_ready()
+
+    @tasks.loop(hours=2.0)
+    async def check_quercus(self):
+        clan = await self.bot.coc.get_clan(clans['Reddit Quercus'])
+        if not self.guild:
+            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        quercus_role = self.guild.get_role(settings['oak_roles']['quercus'])
+        not_in_links = []
+        for member in clan.members:
+            try:
+                discord_id = get_discord_id(member.tag)
+                if not discord_id:
+                    not_in_links.append(f"{member.name} ({member.tag})")
+                    continue
+                discord_member = self.guild.get_member(discord_id)
+                if not discord_member:
+                    print(discord_id, type(discord_id))
+                    continue
+                if quercus_role not in discord_member.roles:
+                    await discord_member.add_roles(quercus_role, "Auto-add in background. You're welcome!")
+            except ValueError:
+                not_in_links.append(f"{member.name} ({member.tag})")
+        if not_in_links:
+            channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
+            new_line = "\n"
+            await channel.send(f"The following players in Quercus are not in the links API:\n"
+                               f"{new_line.join(not_in_links)}")
+
+    @check_quercus.before_loop
+    async def before_check_quercus(self):
+        await self.bot.wait_until_ready()
+
+    @tasks.loop(hours=1.0)
+    async def check_oak(self):
+        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+        if not self.guild:
+            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        quercus_role = self.guild.get_role(settings['oak_roles']['quercus'])
+        not_in_links = []
+        for member in clan.members:
+            try:
+                discord_id = get_discord_id(member.tag)
+                if not discord_id:
+                    not_in_links.append(f"{member.name} ({member.tag})")
+                    continue
+                discord_member = self.guild.get_member(discord_id)
+                if quercus_role in discord_member.roles:
+                    await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
+                                                                    "in Oak. You're welcome!")
+            except ValueError:
+                not_in_links.append(f"{member.name} ({member.tag})")
+        if not_in_links:
+            channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
+            new_line = "\n"
+            await channel.send(f"The following players in Oak are not in the links API:\n"
+                               f"{new_line.join(not_in_links)}")
+
+    @check_oak.before_loop
+    async def before_check_oak(self):
         await self.bot.wait_until_ready()
 
 
