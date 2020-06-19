@@ -20,7 +20,7 @@ class MembersCog(commands.Cog):
                    "<#529404677440274472> are there for tracking purposes.  And <#529406479921446932> is available "
                    "for all your NSFW needs.  (Don't let it go too far.)\n\nIf you haven't already, we highly "
                    "recommend that you also join the Reddit Clan System Discord server!  "
-                   "https://discord.me/redditclansystem\n\nHave fun!")
+                   "https://discord.com/invite/X8U9XjD\n\nHave fun!")
         await channel.send(content)
 
     @commands.Cog.listener()
