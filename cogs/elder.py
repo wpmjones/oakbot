@@ -279,7 +279,7 @@ class Elder(commands.Cog):
     async def stats(self, ctx):
         """ Respond with those players not yet meeting attack/donation rules """
         if authorized(ctx.author.roles):
-            msg = await ctx.send("Retreiving statistics. One moment please.")
+            msg = await ctx.send("Retrieving statistics. One moment please.")
             percent = season.get_days_since() / season.get_season_length()
             attacks_needed = int(20 * percent)
             donates_needed = int(600 * percent)
