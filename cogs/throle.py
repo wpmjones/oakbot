@@ -1,3 +1,5 @@
+import coc
+
 from discord.ext import commands
 from cogs.utils.constants import clans
 from cogs.utils.db import get_discord_id
@@ -8,41 +10,27 @@ class ThRoles(commands.Cog):
     """Commands to be run during war"""
     def __init__(self, bot):
         self.bot = bot
-        self.guild = None
-        self.bot.coc.add_events(self.on_player_townhall_upgrade)
-        self.bot.coc.start_updates("player")
-        bot.loop.create_task(self.cog_init_ready())
 
-    def cog_unload(self):
-        self.bot.coc.remove_events(self.on_player_townhall_upgrade)
-
-    async def cog_init_ready(self):
-        """Sets the guild properly"""
-        await self.bot.wait_until_ready()
-        if not self.guild:
-            self.guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
-
-    async def on_player_townhall_upgrade(self, old_th, new_th, player):
-        self.bot.logger.info(f"{player} from {old_th} to {new_th}")
-        conn = self.bot.pool
+    @coc.PlayerEvents.town_hall()
+    async def on_player_townhall_upgrade(self, old_player, new_player):
+        self.bot.logger.info(f"{new_player.name} changed from TH{old_player.town_hall} to TH{new_player.town_hall}")
         coc_chat = self.bot.get_channel(settings["oak_channels"]["coc_chat"])
-        discord_id = get_discord_id(player.tag)
-        if not self.guild:
-            self.guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
-        user = self.guild.get_member(discord_id)
-        msg = f"Congratulations to {user.mention} on upgrading to Town Hall {new_th}!"
+        discord_id = get_discord_id(new_player.tag)
+        guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
+        user = guild.get_member(discord_id)
+        msg = f"Congratulations to {user.mention} on upgrading to Town Hall {new_player.town_hall}!"
         await coc_chat.send(msg)
-        old_role = await self.get_th_role(old_th)
-        new_role = await self.get_th_role(new_th)
+        old_role = await self.get_th_role(old_player.town_hall)
+        new_role = await self.get_th_role(new_player.town_hall)
         await user.remove_roles(old_role, reason="Auto remove from TH upgrade event")
         await user.add_roles(new_role, reason="Auto assign from TH upgrade event")
 
     @commands.command(name="add_th_roles")
     @commands.is_owner()
     async def add_roles(self, ctx):
+        guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
         clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
-        print(self.guild.id)
-        for member in clan.itermembers:
+        for member in clan.members:
             print(f"{member.name} ({member.tag})")
             discord_id = get_discord_id(member.tag)
             print(f" - {discord_id}")
@@ -51,7 +39,7 @@ class ThRoles(commands.Cog):
             player = await self.bot.coc.get_player(member.tag)
             if player.town_hall < 7:
                 continue
-            user = self.guild.get_member(discord_id)
+            user = guild.get_member(discord_id)
             if not user:
                 self.bot.logger.debug(f"Couldn't retrieve Discord user for {player.name} ({discord_id})")
                 continue
@@ -61,8 +49,9 @@ class ThRoles(commands.Cog):
         await ctx.send("Town hall roles added. Bam!")
 
     async def get_th_role(self, th_level):
+        guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
         role_id = settings["oak_roles"][f"TH{th_level}"]
-        return self.guild.get_role(role_id=role_id)
+        return guild.get_role(role_id=role_id)
 
 
 def setup(bot):

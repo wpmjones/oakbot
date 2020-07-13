@@ -1,6 +1,9 @@
+import coc
 import discord
 import random
+
 from discord.ext import commands
+from config import settings
 
 
 class MembersCog(commands.Cog):
@@ -9,7 +12,7 @@ class MembersCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        """Event listener which is called when a user joins the server."""
+        """Discord listener which is called when a user joins the Discord server."""
         channel = member.guild.get_channel(251463913437134848)
         content = (f"Welcome to Reddit Oak's Discord Server {member.mention}! We're happy to have you! Please "
                    "change your Discord nickname to match your in game name so that we know who you are.  If you have "
@@ -20,12 +23,12 @@ class MembersCog(commands.Cog):
                    "<#529404677440274472> are there for tracking purposes.  And <#529406479921446932> is available "
                    "for all your NSFW needs.  (Don't let it go too far.)\n\nIf you haven't already, we highly "
                    "recommend that you also join the Reddit Clan System Discord server!  "
-                   "https://discord.me/redditclansystem\n\nHave fun!")
+                   "https://discord.gg/X8U9XjD\n\nHave fun!")
         await channel.send(content)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        """Event listener which is called when a user leaves the server."""
+        """Discord listener which is called when a user leaves the Discord server."""
         # Build random list of messages
         msg_options = [" just left the server.  Buh Bye!", 
                        " just left our Discord. I wonder if we will miss them.",
@@ -61,6 +64,17 @@ class MembersCog(commands.Cog):
 
         await ctx.send(content=None, embed=embed)
 
+    @coc.ClanEvents.member_join()
+    async def on_clan_join(self, new_member, clan):
+        """Things to do when a new player joins the clan"""
+        self.bot.coc.add_player_updates(new_member.tag)
+
+    @coc.ClanEvents.member_leave()
+    async def on_clan_leave(self, old_member, clan):
+        """Things to do when a player leaves the clan"""
+        channel = self.bot.get_channel(settings['oak_channels']['member_status_chat'])
+        await channel.send(f"{old_member.name} ({old_member.tag}) has left Reddit Oak. Maybe they'll be back. "
+                           f"Maybe not! Just letting you know. It's not like I'm going to remove them or anything.")
 
 def setup(bot):
     bot.add_cog(MembersCog(bot))

@@ -1,7 +1,7 @@
 import discord
 
 from discord.ext import commands
-from cogs.utils.db import get_discord_id, get_player_tag
+from cogs.utils.db import get_discord_id, get_player_tag, Sql
 from cogs.utils.constants import leagues_to_emoji
 from cogs.utils.converters import PlayerConverter
 from config import settings, emojis, color_pick
@@ -43,108 +43,111 @@ class General(commands.Cog):
     @commands.command(name="player")
     async def player(self, ctx, *, player: PlayerConverter = None):
         """Provide details on the specified player"""
-        return await ctx.send("Currently disabled for testing.")
-        # if not player:
-        #     self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-        #                             f"Problem: No valid player name or tag was provided.")
-        #     return await ctx.send(f"{emojis['other']['redx']} You must provide a valid in-game name or tag for this "
-        #                           f"command. Try `/player TubaKid`")
-        # # pull non-in-game stats from db
-        # with Sql(as_dict=True) as cursor:
-        #     sql = (f"SELECT tag, numWars, avgStars, warStats, joinDate, slackId "
-        #            f"FROM coc_oak_players "
-        #            f"WHERE tag = %s")
-        #     cursor.execute(sql, player.tag)
-        #     oak_stats = cursor.fetchone()
-        # try:
-        #     if not oak_stats:
-        #         self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-        #                                 f"Problem: {player.name} not found in SQL database")
-        #         return await ctx.send(f"{emojis['other']['redx']} The player you provided was not found in the "
-        #                               f"database. Please try again.")
-        # except:
-        #     self.bot.logger.error(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-        #                           f"Unknown error has occurred")
-        #     return await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. "
-        #                           f"<@251150854571163648> I was trying to look up {player.name} "
-        #                           f"but the world conspired against me.")
-        # # retrieve player info from coc.py
-        # player_tag = f"#{oak_stats['tag']}"
-        # player = await self.bot.coc.get_player(player_tag)
-        # troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
-        # sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer", "Siege Barracks"]
-        # count = 0
-        # for name, troop in player.ordered_home_troops.items():
-        #     if name not in sm_troops:
-        #         count += 1
-        #         if name == "Minion":
-        #             count = 1
-        #             if troop_levels[-2:] == "\n":
-        #                 troop_levels += "\n"
-        #             else:
-        #                 troop_levels += "\n\n"
-        #         troop_levels += f"{emojis['troops'][name]}{str(troop.level)} "
-        #         if count % 6 == 0:
-        #             troop_levels += "\n"
-        #     else:
-        #         sm_levels += f"{emojis['siege'][name]}{str(troop.level)} "
-        # count = 0
-        # for name, spell in player.ordered_spells.items():
-        #     count += 1
-        #     if name == "Poison Spell" and spell_levels[-2:] != "\n":
-        #         spell_levels += "\n"
-        #         count = 1
-        #     spell_levels += f"{emojis['spells'][name]}{str(spell.level)} "
-        #     if count % 6 == 0:
-        #         spell_levels += "\n"
-        # count = 0
-        # for name, troop in player.ordered_builder_troops.items():
-        #     count += 1
-        #     builder_levels += f"{emojis['build_troops'][name]}{str(troop.level)} "
-        #     if count % 6 == 0:
-        #         builder_levels += "\n"
-        # # Test for number of heroes
-        # if len(player.ordered_heroes) > 0:
-        #     for name, hero in player.ordered_heroes.items():
-        #         if name != "Battle Machine":
-        #             hero_levels += f"{emojis['heroes'][name]}{str(hero.level)} "
-        #         else:
-        #             builder_hero = f"{emojis['heroes'][name]}{str(hero.level)}"
-        # embed = discord.Embed(title=f"{emojis['league'][leagues_to_emoji[player.league.name]]} "
-        #                             f"{player.name} "
-        #                             f"({player.tag})",
-        #                       color=color_pick(226, 226, 26))
-        # embed.add_field(name="Town Hall",
-        #                 value=f"{emojis['th_icon'][player.town_hall]} {str(player.town_hall)}",
-        #                 inline=True)
-        # embed.add_field(name="Trophies", value=player.trophies, inline=True)
-        # embed.add_field(name="Best Trophies", value=player.best_trophies, inline=True)
-        # embed.add_field(name="War Stars", value=player.war_stars, inline=True)
-        # embed.add_field(name="Attack Wins", value=player.attack_wins, inline=True)
-        # embed.add_field(name="Defense Wins", value=player.defense_wins, inline=True)
-        # embed.add_field(name="Wars in Oak", value=oak_stats['numWars'], inline=True)
-        # embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats['avgStars'], 2)), inline=True)
-        # embed.add_field(name="This Season", value=oak_stats['warStats'], inline=False)
-        # embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
-        # if sm_levels != "":
-        #     embed.add_field(name="Siege Machines", value=sm_levels, inline=False)
-        # embed.add_field(name="Spell Levels", value=spell_levels, inline=False)
-        # if hero_levels != "":
-        #     embed.add_field(name="Heroes", value=hero_levels, inline=False)
-        # embed.add_field(name="Builder Hall Level",
-        #                 value=f"{emojis['bh_icon'][player.builder_hall]} {str(player.builder_hall)}",
-        #                 inline=False)
-        # embed.add_field(name="Versus Trophies", value=str(player.versus_trophies), inline=True)
-        # embed.add_field(name="Versus Battle Wins", value=str(player.versus_attack_wins), inline=True)
-        # embed.add_field(name="Best Versus Trophies", value=str(player.best_versus_trophies), inline=True)
-        # embed.add_field(name="Troop Levels", value=builder_levels, inline=False)
-        # if builder_hero != "":
-        #     embed.add_field(name="Hero", value=builder_hero, inline=False)
-        # embed.set_footer(icon_url="http://www.mayodev.com/images/coc/oakbadge.png",
-        #                  text=f"Member of Reddit Oak since {oak_stats['joinDate'].strftime('%e %B, %Y')}")
-        # self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-        #                       f"Request complete: /player {player_name}")
-        # await ctx.send(embed=embed)
+        if not player:
+            self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                    f"Problem: No valid player name or tag was provided.")
+            return await ctx.send(f"{emojis['other']['redx']} You must provide a valid in-game name or tag for this "
+                                  f"command. Try `/player TubaKid`")
+        # pull non-in-game stats from db
+        with Sql(as_dict=True) as cursor:
+            sql = (f"SELECT tag, numWars, avgStars, warStats, joinDate, slackId "
+                   f"FROM coc_oak_players "
+                   f"WHERE tag = %s")
+            cursor.execute(sql, (player.tag[1:], ))
+            oak_stats = cursor.fetchone()
+        try:
+            if not oak_stats:
+                self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                        f"Problem: {player.name} not found in SQL database")
+                return await ctx.send(f"{emojis['other']['redx']} The player you provided was not found in the "
+                                      f"database. Please try again.")
+        except:
+            self.bot.logger.error(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                  f"Unknown error has occurred")
+            return await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. "
+                                  f"<@251150854571163648> I was trying to look up {player.name} "
+                                  f"but the world conspired against me.")
+        # retrieve player info from coc.py
+        player_tag = f"#{oak_stats['tag']}"
+        player = await self.bot.coc.get_player(player_tag)
+        troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
+        sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer", "Siege Barracks"]
+        super_troops = ["Super Archer", "Inferno Dragon", "Super Valkyrie", "Super Witch", "Headhunter"]
+        count = 0
+        for troop in player.home_troops:
+            if troop.name in super_troops:
+                # We're ignoring super troops at this time
+                continue
+            if troop.name not in sm_troops:
+                count += 1
+                if troop.name == "Minion":
+                    count = 1
+                    if troop_levels[-2:] == "\n":
+                        troop_levels += "\n"
+                    else:
+                        troop_levels += "\n\n"
+                troop_levels += f"{emojis['troops'][troop.name]}{str(troop.level)} "
+                if count % 6 == 0:
+                    troop_levels += "\n"
+            else:
+                sm_levels += f"{emojis['siege'][troop.name]}{str(troop.level)} "
+        count = 0
+        for spell in player.spells:
+            count += 1
+            if spell.name == "Poison Spell" and spell_levels[-2:] != "\n":
+                spell_levels += "\n"
+                count = 1
+            spell_levels += f"{emojis['spells'][spell.name]}{str(spell.level)} "
+            if count % 6 == 0:
+                spell_levels += "\n"
+        count = 0
+        for troop in player.builder_troops:
+            count += 1
+            builder_levels += f"{emojis['build_troops'][troop.name]}{str(troop.level)} "
+            if count % 6 == 0:
+                builder_levels += "\n"
+        # Test for number of heroes
+        if len(player.heroes) > 0:
+            for hero in player.heroes:
+                if hero.name != "Battle Machine":
+                    hero_levels += f"{emojis['heroes'][hero.name]}{str(hero.level)} "
+                else:
+                    builder_hero = f"{emojis['heroes'][hero.name]}{str(hero.level)}"
+        embed = discord.Embed(title=f"{emojis['league'][leagues_to_emoji[player.league.name]]} "
+                                    f"{player.name} "
+                                    f"({player.tag})",
+                              color=color_pick(226, 226, 26))
+        embed.add_field(name="Town Hall",
+                        value=f"{emojis['th_icon'][player.town_hall]} {str(player.town_hall)}",
+                        inline=True)
+        embed.add_field(name="Trophies", value=player.trophies, inline=True)
+        embed.add_field(name="Best Trophies", value=player.best_trophies, inline=True)
+        embed.add_field(name="War Stars", value=player.war_stars, inline=True)
+        embed.add_field(name="Attack Wins", value=player.attack_wins, inline=True)
+        embed.add_field(name="Defense Wins", value=player.defense_wins, inline=True)
+        embed.add_field(name="Wars in Oak", value=oak_stats['numWars'], inline=True)
+        embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats['avgStars'], 2)), inline=True)
+        embed.add_field(name="This Season", value=oak_stats['warStats'], inline=False)
+        embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
+        if sm_levels != "":
+            embed.add_field(name="Siege Machines", value=sm_levels, inline=False)
+        embed.add_field(name="Spell Levels", value=spell_levels, inline=False)
+        if hero_levels != "":
+            embed.add_field(name="Heroes", value=hero_levels, inline=False)
+        embed.add_field(name="Builder Hall Level",
+                        value=f"{emojis['bh_icon'][player.builder_hall]} {str(player.builder_hall)}",
+                        inline=False)
+        embed.add_field(name="Versus Trophies", value=str(player.versus_trophies), inline=True)
+        embed.add_field(name="Versus Battle Wins", value=str(player.versus_attack_wins), inline=True)
+        embed.add_field(name="Best Versus Trophies", value=str(player.best_versus_trophies), inline=True)
+        embed.add_field(name="Troop Levels", value=builder_levels, inline=False)
+        if builder_hero != "":
+            embed.add_field(name="Hero", value=builder_hero, inline=False)
+        embed.set_footer(icon_url=player.clan.badge.url,
+                         text=f"Member of Reddit Oak since {oak_stats['joinDate'].strftime('%e %B, %Y')}")
+        self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                              f"Request complete: /player {player.name}")
+        await ctx.send(embed=embed)
 
     @commands.command(name="avatar", hidden=True)
     async def avatar(self, ctx, user: discord.Member):

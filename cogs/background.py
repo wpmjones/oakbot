@@ -54,16 +54,16 @@ class Background(commands.Cog):
                 "WHERE tag = ? AND timestamp = ?")
         to_google = []
         async for m in clan.get_detailed_members():
-            clan_games = m.achievements_dict.get("Games Champion", NullItem).value
-            barb_king = m.heroes_dict.get("Barbarian King", NullItem).level
-            arch_queen = m.heroes_dict.get("Archer Queen", NullItem).level
-            grand_warden = m.heroes_dict.get("Grand Warden", NullItem).level
-            royal_champ = m.heroes_dict.get("Royal Champion", NullItem).level
-            battle_mach = m.heroes_dict.get("Battle Machine", NullItem).level
-            wall_wrecker = m.siege_machines_dict.get("Wall Wrecker", NullItem).level
-            battle_blimp = m.siege_machines_dict.get("Battle Blimp", NullItem).level
-            stone_slammer = m.siege_machines_dict.get("Stone Slammer", NullItem).level
-            barracks = m.siege_machines_dict.get("Siege Barracks", NullItem).level
+            clan_games = m.get_achievement("Games Champion").value or 0
+            barb_king = m.get_hero("Barbarian King").level or 0
+            arch_queen = m.get_hero("Archer Queen").level or 0
+            grand_warden = m.get_hero("Grand Warden").level or 0
+            royal_champ = m.get_hero("Royal Champion").level or 0
+            battle_mach = m.get_hero("Battle Machine").level or 0
+            wall_wrecker = m.siege_machines[0].level or 0
+            battle_blimp = m.siege_machines[1].level or 0
+            stone_slammer = m.siege_machines[2].level or 0
+            barracks = m.siege_machines[3].level or 0
             cursor.execute(sql1, m.tag[1:], m.name, m.exp_level, m.trophies, m.donations, m.received,
                            m.league.name, m.league.badge.url, m.town_hall, m.war_stars, m.attack_wins,
                            m.defense_wins, m.best_trophies, m.versus_trophies, m.best_versus_trophies,

@@ -1,5 +1,4 @@
 import traceback
-import os
 import sys
 import coc
 import asyncio
@@ -9,6 +8,7 @@ import discord
 from discord.ext import commands
 from cogs.utils import context
 from cogs.utils.db import Psql
+from cogs.utils.error_handler import clash_event_error
 from datetime import datetime
 from loguru import logger
 from config import settings
@@ -16,7 +16,6 @@ from config import settings
 enviro = "LIVE"
 
 initial_extensions = ["cogs.general",
-                      "cogs.members",
                       "cogs.elder",
                       "cogs.owner",
                       "cogs.admin",
@@ -27,7 +26,8 @@ if enviro == "LIVE":
     prefix = "/"
     log_level = "INFO"
     coc_names = "galaxy"
-    initial_extensions.append("cogs.warrole")
+    initial_extensions.append("cogs.members")
+    initial_extensions.append("cogs.war")
     initial_extensions.append("cogs.throle")
     initial_extensions.append("cogs.background")
     coc_email = settings['supercell']['user']
@@ -52,17 +52,14 @@ description = """Welcome to The Arborist - by TubaKid
 All commands must begin with a slash"""
 
 
-class CustomClient(coc.EventsClient):
-    def _create_status_tasks(self, cached_war, war):
-        if cached_war.state != war.state:
-            self.dispatch("on_war_state_change", war.state, war)
-
-        super()._create_status_tasks(cached_war, war)
+class COCClient(coc.EventsClient):
+    async def on_event_error(self, event_name, exception, *args, **kwargs):
+        await clash_event_error(self.bot, event_name, exception, *args, **kwargs)
 
 
 coc_client = coc.login(coc_email,
                        coc_pass,
-                       client=CustomClient,
+                       client=COCClient,
                        key_names=coc_names,
                        key_count=2,
                        correct_tags=True)
@@ -79,9 +76,7 @@ class OakBot(commands.Bot):
         self.color = discord.Color.green()
         self.logger = logger
         self.session = aiohttp.ClientSession(loop=self.loop)
-
         self.loop.create_task(self.after_ready())
-        coc_client.add_events(self.on_event_error)
 
         for extension in initial_extensions:
             try:
@@ -130,23 +125,6 @@ class OakBot(commands.Bot):
         elif isinstance(error, commands.ArgumentParsingError):
             await ctx.send(error)
 
-    async def on_event_error(self, event_name, *args, **kwargs):
-        embed = discord.Embed(title="COC Event Error", color=discord.Color.green())
-        embed.add_field(name="Event", value=event_name)
-        embed.description = f"```py\n{traceback.format_exc()}\n```"
-        embed.timestamp = datetime.utcnow()
-
-        args_str = ["```python\n"]
-        for index, arg in enumerate(args):
-            args_str.append(f"[{index}]: {arg!r}")
-        args_str.append("```")
-        embed.add_field(name="Args", value="\n".join(args_str), inline=False)
-        try:
-            event_channel = self.get_channel(settings['log_channels']['events'])
-            await event_channel.send(embed=embed)
-        except:
-            pass
-
     async def on_error(self, event_method, *args, **kwargs):
         e = discord.Embed(title="Discord Event Error", color=0xa32952)
         e.add_field(name="Event", value=event_method)
@@ -166,6 +144,9 @@ class OakBot(commands.Bot):
     async def on_ready(self):
         activity = discord.Game(" with fertilizer")
         await bot.change_presence(activity=activity)
+        self.coc.add_clan_updates("#CVCJR89")
+        clan = await self.coc.get_clan("#CVCJR89")
+        self.coc.add_player_updates(*[m.tag for m in clan.members])
 
     async def after_ready(self):
         await self.wait_until_ready()

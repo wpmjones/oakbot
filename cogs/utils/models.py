@@ -2,7 +2,6 @@ import coc
 
 from datetime import datetime, timedelta
 from cogs.utils.db import get_link_token
-from functools import lru_cache
 from config import settings
 
 
@@ -27,8 +26,6 @@ class Timestamp:
 
 
 class WarData(coc.ClanWar):
-    __slots__ = coc.ClanWar.__slots__ + ("bot", "calls_by_target", "calls_by_attacker", "calls")
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.bot = self._http.client.bot
@@ -222,7 +219,7 @@ class WarData(coc.ClanWar):
         """Removes call from database"""
         sql = ("UPDATE oak_calls"
                "SET cancelled = True"
-               "WHERE war_id = $1 AND caller_pos = $2 AND target_pos = $3")
+               "WHERE war_id = $1 AND caller_pos = $2 AND target_pos = $3 AND cancelled = False")
         await self.bot.pool.execute(sql, await self.get_war_id(self.preparation_start_time.time), caller, target)
 
 

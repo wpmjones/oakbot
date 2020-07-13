@@ -10,7 +10,7 @@ tag_validator = re.compile("^#?[PLYQGRJCUV0289]+$")
 
 class PlayerConverter(commands.Converter):
     async def convert(self, ctx, argument):
-        if isinstance(argument, coc.BasicPlayer):
+        if isinstance(argument, coc.Player):
             return argument
 
         tag = coc.utils.correct_tag(argument)
@@ -27,7 +27,7 @@ class PlayerConverter(commands.Converter):
             clan = await ctx.coc.get_clan(clan_tag)
             if clan.name == name or clan.tag == tag:
                 raise commands.BadArgument(f"You appear to be passing the clan tag/name for `{clan.name}`")
-            member = clan.get_member(name=name)
+            member = clan.get_member_by(name=name)
             if member:
                 return member
 
