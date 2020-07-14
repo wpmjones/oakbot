@@ -716,7 +716,7 @@ class War(commands.Cog):
         call = self.calls_by_attacker.get(attack.attacker.map_position)
         if call:
             await self.complete_call(call['call_id'])
-        war_channel = await self.bot.get_channel(settings['oak_channels']['oak_war'])
+        war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
         stars = ":star:" * attack.stars
         destruction = "" if attack.destruction == 3 else f"{int(attack.destruction)}%"
         await war_channel.send(f"{stars} {member_display(attack.attacker)} just attacked "
