@@ -15,6 +15,9 @@ class WarSetup(commands.Cog):
         self.guild = None
         self.bot.coc.add_events(self.on_war_state_change)
 
+    def cog_unload(self):
+        self.bot.coc.remove_events(self.on_war_state_change)
+
     @coc.WarEvents.state(clans['Reddit Oak'])
     async def on_war_state_change(self, old_war, new_war):
         """ Assign inWar role to those participating in the current war """

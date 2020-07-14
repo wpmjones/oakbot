@@ -10,6 +10,10 @@ class ThRoles(commands.Cog):
     """Commands to be run during war"""
     def __init__(self, bot):
         self.bot = bot
+        self.bot.coc.add_events(self.on_player_townhall_upgrade)
+
+    def cog_unload(self):
+        self.bot.coc.remove_events(self.on_player_townhall_upgrade)
 
     @coc.PlayerEvents.town_hall()
     async def on_player_townhall_upgrade(self, old_player, new_player):

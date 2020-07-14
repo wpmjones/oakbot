@@ -9,6 +9,14 @@ from config import settings
 class MembersCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.bot.coc.add_events(self.on_clan_join,
+                                self.on_clan_leave
+                                )
+
+    def cog_unload(self):
+        self.bot.coc.remove_events(self.on_clan_join,
+                                   self.on_clan_leave
+                                   )
 
     @commands.Cog.listener()
     async def on_member_join(self, member):

@@ -1,12 +1,10 @@
 import discord
 import asyncio
-import coc
 import season
 
 from discord.ext import commands
-from cogs.utils.db import Sql, Psql
+from cogs.utils.db import Sql
 from cogs.utils.checks import is_elder
-from cogs.utils.converters import ClanConverter
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from httplib2 import Http
