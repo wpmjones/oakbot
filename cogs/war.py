@@ -23,16 +23,18 @@ def to_time(seconds):
 
 
 def get_best_stars(member):
-    if member.best_opponent_attack:
+    try:
         return member.best_opponent_attack.stars
-    else:
+    except TypeError:
+        # No one attacked the base, so the attribute can't be retrieved
         return 0
 
 
 def get_best_percentage(member):
-    if member.best_opponent_attack:
+    try:
         return member.best_opponent_attack.destruction
-    else:
+    except TypeError:
+        # No one attacked the base, so the attribute can't be retrieved
         return 0
 
 
@@ -115,10 +117,14 @@ class War(commands.Cog):
     """War bot commands and setup"""
     def __init__(self, bot):
         self.bot = bot
-        self.bot.coc.add_events(self.on_war_attack)
+        # self.bot.coc.add_events(self.on_war_attack)
         self.calls = []
         self.calls_by_attacker = {}
         self.calls_by_target = {}
+
+    def cog_unload(self):
+        pass
+        # self.bot.coc.remove_events(self.on_war_attack)
 
     @staticmethod
     def phase2(start_time):

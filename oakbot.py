@@ -28,6 +28,7 @@ if enviro == "LIVE":
     coc_names = "galaxy"
     initial_extensions.append("cogs.members")
     initial_extensions.append("cogs.war")
+    initial_extensions.append("cogs.warrole")
     initial_extensions.append("cogs.throle")
     initial_extensions.append("cogs.background")
     coc_email = settings['supercell']['user']
