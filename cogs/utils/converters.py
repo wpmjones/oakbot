@@ -36,7 +36,7 @@ class PlayerConverter(commands.Converter):
 
 class ClanConverter(commands.Converter):
     async def convert(self, ctx, argument):
-        if isinstance(argument, coc.BasicClan):
+        if isinstance(argument, coc.Clan):
             return argument
 
         tag = coc.utils.correct_tag(argument)

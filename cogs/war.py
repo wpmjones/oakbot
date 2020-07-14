@@ -115,6 +115,7 @@ class War(commands.Cog):
     """War bot commands and setup"""
     def __init__(self, bot):
         self.bot = bot
+        self.bot.coc.add_events(self.on_war_attack)
         self.calls = []
         self.calls_by_attacker = {}
         self.calls_by_target = {}
@@ -166,27 +167,6 @@ class War(commands.Cog):
             self.calls.append(call)
             self.calls_by_attacker[row['caller_pos']] = call
             self.calls_by_target[row['target_pos']] = call
-
-    async def get_open_bases(self, war):
-        sql = ("SELECT call_id, caller_pos, target_pos FROM oak_calls "
-               "WHERE war_id = $1 AND call_expiration > $2 AND cancelled = False AND attack_complete = False "
-               "ORDER BY target_pos")
-        war_id = await self.get_war_id(war.preparation_start_time.time)
-        fetch = await self.bot.pool.fetch(sql, war_id, datetime.utcnow())
-        called_bases = []
-        for row in fetch:
-            called_bases.append(row['target_pos'])
-        open_bases = []
-        for target in war.opponent.members:
-            if target.map_position not in called_bases:
-                open_bases.append({
-                    "map_position": target.map_position,
-                    "name": target.name,
-                    "town_hall": target.town_hall,
-                    "best_stars": target.best_opponent_attack.stars,
-                    "best_destruction": target.best_opponent_attack.destruction
-                })
-        return open_bases
 
     async def get_base_owner(self, war, **kwargs):
         """Can pass in discord_id, player_tag, or map_ position
