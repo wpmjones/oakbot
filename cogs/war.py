@@ -401,7 +401,7 @@ class War(commands.Cog):
         for call in calls_by_defender:
             if call['reserve']:
                 continue
-            if call['expires'] == self.phase2(war.start_time.time):
+            if call['expires'] == self.phase2(war.start_time.time).time:
                 expires = " at end of phase 1"
             else:
                 expires = f" in {expire_display(call['expires'])}"
