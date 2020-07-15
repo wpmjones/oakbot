@@ -402,10 +402,10 @@ class War(commands.Cog):
             if call['reserve']:
                 continue
             if call['expires'] == self.phase2(war.start_time.time).time:
-                expires = " at end of phase 1"
+                expires = "at end of phase 1"
             else:
-                expires = f" in {expire_display(call['expires'])}"
-            response.append(f"• {call_display(call, 'opponent')} called by {call_display(call, 'clan')} expires in "
+                expires = f"in {expire_display(call['expires'])}"
+            response.append(f"• {call_display(call, 'opponent')} called by {call_display(call, 'clan')} expires "
                             f"{expires}")
         if len(response) == 1:
             return await ctx.send("No active calls at this time.")
