@@ -245,7 +245,7 @@ class War(commands.Cog):
         sql = ("INSERT INTO oak_calls (war_id, caller_pos, target_pos, call_time, call_expiration)"
                "VALUES ($1, $2, $3, $4, $5)")
         await self.bot.pool.execute(sql, war_id, caller, target, now,
-                                    now + timedelta(hours=3) if now > start_time else self.phase2(start_time))
+                                    now + timedelta(hours=3) if now > start_time else self.phase2(start_time).time)
 
     async def complete_call(self, call_id):
         sql = ("UPDATE oak_calls "
