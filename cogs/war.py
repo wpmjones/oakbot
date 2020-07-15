@@ -332,8 +332,13 @@ class War(commands.Cog):
         for member in war.opponent.members:
             if member.map_position == target_pos:
                 target = member  # for later use
-                if member.best_opponent_attack and member.best_opponent_attack.stars == 3:
-                    return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
+                try:
+                    best = member.best_opponent_attack.stars
+                    if best == 3:
+                        return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
+                except TypeError:
+                    # no attacks yet
+                    continue
         for call in self.calls:
             if call['target_pos'] == target_pos:
                 for member in war.opponent.members:
@@ -418,10 +423,18 @@ class War(commands.Cog):
         targets = war.opponent.members.copy()
         targets.sort(key=lambda t: t.map_position)
         for target in targets:
-            if target.best_opponent_attack.stars == 3 or target.map_position in self.calls_by_target:
+            try:
+                best_stars = target.best_opponent_attack.stars
+                best_destruction = target.best_opponent_attack.destruction
+                if best_stars == 3 or target.map_position in self.calls_by_target:
+                    continue
+            except TypeError:
+                # no attacks yet
+                best_stars = 0
+                best_destruction = 0
                 continue
-            open_bases.append(f"• {member_display(target)} - {target.best_opponent_attack.stars} stars "
-                              f"{int(target.best_opponent_attack.destruction)}%")
+            open_bases.append(f"• {member_display(target)} - {best_stars} stars "
+                              f"{int(best_destruction)}%")
         if len(open_bases) == 1:
             return await ctx.send("No open bases at this time.")
         else:
@@ -656,6 +669,32 @@ class War(commands.Cog):
         else:
             return await ctx.send(f"Removed opted in for {member_display(member)}")
 
+    @war.command(name="users", hidden=True)
+    async def war_users(self, ctx):
+        """Reports the links between discord and player tags"""
+        if not self.is_elder(ctx.author):
+            return await ctx.send("You are not authorized to use this command.")
+        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+        yes_ids = ["Players with associated Discord users"]
+        no_ids = ["Players without Discord users"]
+        free = ["Discord users without associated players"]
+        valid_ids = []
+        print("Starting clan members")
+        for member in clan.members:
+            discord_id = get_discord_id(member.tag)
+            if discord_id:
+                yes_ids.append(f"• {member.name} ({member.tag}) is <@{discord_id}> ({discord_id})")
+                valid_ids.append(discord_id)
+            else:
+                no_ids.append(f"• {member.name} ({member.tag})")
+        print("Starting Discord users")
+        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        for member in guild.members:
+            if not member.bot and member.id not in valid_ids:
+                free.append(f"• <@{member.id}> ({member.id})")
+        response = (yes_ids + no_ids + free)
+        await ctx.send_text(ctx.channel, response)
+
     @war.command(name="help")
     async def war_help(self, ctx):
         """Help for members and elders"""
@@ -663,7 +702,6 @@ class War(commands.Cog):
             u"• `/war status` - Get info about current war",
             u"• `/war open` - Find open bases",
             u"• `/war calls` - List active calls",
-            u"• `/war sheet` - Get link to Clan War Sheet",
             u"• `/war call <pos>` - Call a target in war",
             u"• `/war c5` - Call a target in war",
             u"• `/war 3c5` - Call target specifying caller (for alts)",
