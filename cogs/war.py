@@ -485,7 +485,7 @@ class War(commands.Cog):
                                     await self.get_war_id(war.preparation_start_time.time),
                                     base_owner['map_position'],
                                     now,
-                                    self.phase3(war.end_time.time),
+                                    self.phase3(war.end_time.time).time,
                                     reasons[response])
         await ctx.send(f"{base_display(base_owner)} has been marked as reserve.")
 
