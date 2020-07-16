@@ -177,11 +177,13 @@ class War(commands.Cog):
         """
         if "discord_id" in kwargs.keys():
             base = {'discord_id': kwargs.get('discord_id')}
+            print(base)
             api_response = get_player_tag(base['discord_id'])
             if api_response:
+                print(api_response)
                 if len(api_response) == 1:
                     base['player_tag'] = api_response[0]
-                    member = war.get_member(base['player_tag'])
+                    member = war.get_member_by(tag=base['player_tag'])
                     if member:
                         base['name'] = member.name
                         base['map_position'] = member.map_position
@@ -193,7 +195,8 @@ class War(commands.Cog):
                 else:
                     bases = []
                     for tag in api_response:
-                        member = war.get_member(tag)
+                        member = war.get_member_by(tag=tag)
+                        print(member)
                         if member:
                             base['tag'] = member.tag
                             base['name'] = member.name,
@@ -210,7 +213,7 @@ class War(commands.Cog):
                 raise ValueError(f"{kwargs.get('discord_id')} is missing from the links database. "
                                  f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
         elif "player_tag" in kwargs.keys():
-            member = war.get_member(kwargs.get('player_tag'))
+            member = war.get_member_by(tag=kwargs.get('player_tag'))
             if member:
                 base = {'tag': member.tag,
                         'name': member.name,
