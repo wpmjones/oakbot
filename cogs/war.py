@@ -175,33 +175,32 @@ class War(commands.Cog):
         """Can pass in discord_id, player_tag, or map_ position
         All others will be ignored
         """
-        base = {}
         if "discord_id" in kwargs.keys():
-            base['discord_id'] = kwargs.get('discord_id')
+            base = {'discord_id': kwargs.get('discord_id')}
             api_response = get_player_tag(base['discord_id'])
             if api_response:
                 if len(api_response) == 1:
                     base['player_tag'] = api_response[0]
-                    for member in war.clan.members:
-                        if member.tag == base['player_tag']:
-                            base['name'] = member.name
-                            base['map_position'] = member.map_position
-                            base['town_hall'] = member.town_hall
-                            base['attacks_left'] = 2 - len(member.attacks)
-                            return base
+                    member = war.get_member(base['player_tag'])
+                    if member:
+                        base['name'] = member.name
+                        base['map_position'] = member.map_position
+                        base['town_hall'] = member.town_hall
+                        base['attacks_left'] = 2 - len(member.attacks)
+                        return base
                     else:
                         raise ValueError("This player is not in the current war.")
                 else:
                     bases = []
                     for tag in api_response:
-                        base['player_tag'] = tag
-                        for member in war.clan.members:
-                            if member.tag == base['player_tag']:
-                                base['name'] = member.name
-                                base['map_position'] = member.map_position
-                                base['town_hall'] = member.town_hall
-                                base['attacks_left'] = 2 - len(member.attacks)
-                                bases.append(base)
+                        member = war.get_member(tag)
+                        if member:
+                            base['tag'] = member.tag
+                            base['name'] = member.name,
+                            base['map_position'] = member.map_position,
+                            base['town_hall'] = member.town_hall,
+                            base['attacks_left'] = 2 - len(member.attacks)
+                            bases.append(base)
                     return bases
             else:
                 # TODO change to elder channel or member status before going live
@@ -211,20 +210,20 @@ class War(commands.Cog):
                 raise ValueError(f"{kwargs.get('discord_id')} is missing from the links database. "
                                  f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
         elif "player_tag" in kwargs.keys():
-            base['tag'] = coc.utils.correct_tag(kwargs.get('player_tag'))
-            member = war.get_member(base['tag'])
-            if member.tag == base['tag']:
-                base['name'] = member.name
-                base['discord_id'] = get_discord_id(member.tag)
-                base['map_position'] = member.map_position
-                base['town_hall'] = member.town_hall
-                base['attacks_left'] = 2 - len(member.attacks)
+            member = war.get_member(kwargs.get('player_tag'))
+            if member:
+                base = {'tag': member.tag,
+                        'name': member.name,
+                        'discord_id': get_discord_id(member.tag),
+                        'map_position': member.map_position,
+                        'town_hall': member.town_hall,
+                        'attacks_left': 2 - len(member.attacks)
+                        }
                 return base
             else:
                 raise ValueError("This player is not in the current war.")
         elif "map_position" in kwargs.keys():
-            base['map_position'] = int(kwargs.get('map_position'))
-            print(f"get_base_owner\n  Map Position: {base['map_position']} (Type: {type(base['map_position'])})")
+            base = {'map_position': int(kwargs.get('map_position'))}
             member = war.get_member_by(map_position=base['map_position'], is_opponent=False)
             base['name'] = member.name
             base['tag'] = member.tag
