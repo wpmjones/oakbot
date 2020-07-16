@@ -426,6 +426,8 @@ class War(commands.Cog):
         open_bases = ["Bases that are open"]
         targets = war.opponent.members.copy()
         targets.sort(key=lambda t: t.map_position)
+        # no idea why, but the next line is necessary for this to work <shrug>
+        xxx = war.get_member_by(name="fred")
         for target in targets:
             if target.best_opponent_attack:
                 if target.best_opponent_attack.stars == 3 or target.map_position in self.calls_by_target:
