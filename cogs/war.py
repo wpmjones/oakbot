@@ -286,8 +286,7 @@ class War(commands.Cog):
         /war c5
         /war 4c8 (for calling alts)
         """
-        print(args)
-        print(len(args))
+        self.bot.logger.info(f"War Call Args: {args}\nLength: {len(args)}")
         war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
         if war.state not in ["preparation", "inWar"]:
             return await ctx.send("No active war")
@@ -297,7 +296,7 @@ class War(commands.Cog):
             caller_pos = int(args[0])
             target_pos = int(args[1])
             base_owner = await self.get_base_owner(war, map_position=caller_pos)
-            print(f"{base_display(base_owner)} calling {target_pos}")
+            self.bot.logger.info(f"Single base: {base_display(base_owner)} calling {target_pos}")
         elif len(args) == 1:
             # User provided only target base. Caller derived from Discord ID
             base_owner = await self.get_base_owner(war, discord_id=ctx.author.id)
@@ -310,6 +309,7 @@ class War(commands.Cog):
                                         additional_options=len(base_owner))
                 base_owner = base_owner[resp - 1]
             target_pos = args[0]
+            self.bot.logger.info(f"Multi base: {base_display(base_owner)} calling {target_pos}")
         else:
             return await ctx.send("I was expecting one or two numbers and that's not what I got. Care to try again?")
         # By this point, we should have a base_owner and a target_pos
@@ -749,7 +749,7 @@ class War(commands.Cog):
         call = self.calls_by_attacker.get(attack.attacker.map_position)
         if call:
             await self.complete_call(call['call_id'])
-        war_channel = self.bot.get_channel(364507837550034956)   # settings['oak_channels']['oak_war'])
+        war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
         stars = ":star:" * attack.stars
         destruction = "" if attack.destruction == 3 else f"{int(attack.destruction)}%"
         # TODO mark reported in psql
