@@ -51,7 +51,7 @@ superscriptNumbers = u"⁰¹²³⁴⁵⁶⁷⁸⁹"
 
 
 def sup(c):
-    if ord('0') < ord(c) <= ord('9'):
+    if ord('0') <= ord(c) <= ord('9'):
         return superscriptNumbers[ord(c) - ord('0')]
     else:
         return c
@@ -138,10 +138,10 @@ class War(commands.Cog):
 
     async def init_calls(self, war):
         sql = ("SELECT call_id, caller_pos, target_pos, call_expiration, reserve, reserve_reason FROM oak_calls "
-               "WHERE war_id = $1 AND cancelled = False AND attack_complete = False "
-               "ORDER BY target_pos")    # AND call_expiration > $2
+               "WHERE war_id = $1 AND call_expiration > $2 AND cancelled = False AND attack_complete = False "
+               "ORDER BY target_pos")
         war_id = await self.get_war_id(war.preparation_start_time.time)
-        fetch = await self.bot.pool.fetch(sql, war_id)  # , datetime.utcnow()
+        fetch = await self.bot.pool.fetch(sql, war_id, datetime.utcnow())
         # clear calls for fresh reload
         self.calls = []
         self.calls_by_attacker = {}
@@ -300,6 +300,7 @@ class War(commands.Cog):
         elif len(args) == 1:
             # User provided only target base. Caller derived from Discord ID
             base_owner = await self.get_base_owner(war, discord_id=ctx.author.id)
+            self.bot.logger.info(f"Base Owner: {base_owner}")
             if type(base_owner) is list:
                 player_list = ""
                 for player in base_owner:
@@ -745,6 +746,7 @@ class War(commands.Cog):
         Mark call completed
         Report to Discord
         """
+        # TODO display differently if enemy is attacker
         await self.init_calls(war)
         call = self.calls_by_attacker.get(attack.attacker.map_position)
         if call:
@@ -752,7 +754,6 @@ class War(commands.Cog):
         war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
         stars = ":star:" * attack.stars
         destruction = "" if attack.destruction == 3 else f"{int(attack.destruction)}%"
-        # TODO mark reported in psql
         await war_channel.send(f"{stars} {member_display(attack.attacker)} just attacked "
                                f"{member_display(attack.defender)} and got {attack.stars} stars "
                                f"{destruction}")
