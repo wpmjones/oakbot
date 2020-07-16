@@ -23,18 +23,16 @@ def to_time(seconds):
 
 
 def get_best_stars(member):
-    try:
+    if member.best_opponent_attack:
         return member.best_opponent_attack.stars
-    except TypeError:
-        # No one attacked the base, so the attribute can't be retrieved
+    else:
         return 0
 
 
 def get_best_percentage(member):
-    try:
+    if member.best_opponent_attack:
         return member.best_opponent_attack.destruction
-    except TypeError:
-        # No one attacked the base, so the attribute can't be retrieved
+    else:
         return 0
 
 
@@ -320,7 +318,7 @@ class War(commands.Cog):
         if not self.is_elder(ctx.author):
             if base_owner['discord_id'] != ctx.author.id:
                 return await ctx.send(f"You are not allowed to call for {base_owner['name']} ({base_owner['tag']}.")
-            for call in war.calls:
+            for call in self.calls:
                 if call['caller_pos'] == base_owner['map_position']:
                     if not call['reserve']:
                         return await ctx.send(f"{base_display(base_owner)} already called {call['target']}.")
@@ -332,13 +330,8 @@ class War(commands.Cog):
         for member in war.opponent.members:
             if member.map_position == target_pos:
                 target = member  # for later use
-                try:
-                    best = member.best_opponent_attack.stars
-                    if best == 3:
-                        return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
-                except TypeError:
-                    # no attacks yet
-                    continue
+                if member.best_opponent_attack and member.best_opponent_attack.stars == 3:
+                    return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
         for call in self.calls:
             if call['target_pos'] == target_pos:
                 for member in war.opponent.members:
@@ -423,18 +416,13 @@ class War(commands.Cog):
         targets = war.opponent.members.copy()
         targets.sort(key=lambda t: t.map_position)
         for target in targets:
-            try:
-                best_stars = target.best_opponent_attack.stars
-                best_destruction = target.best_opponent_attack.destruction
-                if best_stars == 3 or target.map_position in self.calls_by_target:
+            if target.best_opponent_attack:
+                if target.best_opponent_attack.stars == 3 or target.map_position in self.calls_by_target:
                     continue
-            except TypeError:
-                # no attacks yet
-                best_stars = 0
-                best_destruction = 0
-                continue
-            open_bases.append(f"• {member_display(target)} - {best_stars} stars "
-                              f"{int(best_destruction)}%")
+                open_bases.append(f"• {member_display(target)} - {target.best_opponent_attack.stars} stars "
+                                  f"{int(target.best_opponent_attack.destruction)}%")
+            else:
+                open_bases.append(f"• {member_display(target)} - 0 stars")
         if len(open_bases) == 1:
             return await ctx.send("No open bases at this time.")
         else:
