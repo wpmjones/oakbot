@@ -196,15 +196,19 @@ class War(commands.Cog):
                     bases = []
                     for tag in api_response:
                         member = war.get_member_by(tag=tag)
-                        print(member)
-                        if member:
+                        if member and len(member.attacks) < 2:
                             base['tag'] = member.tag
                             base['name'] = member.name,
                             base['map_position'] = member.map_position,
                             base['town_hall'] = member.town_hall,
                             base['attacks_left'] = 2 - len(member.attacks)
                             bases.append(base)
-                    return bases
+                    if len(bases) == 1:
+                        # this would happen if they have multiple accounts but only one account has attacks left
+                        return bases[0]
+                    else:
+                        # multiple accounts with attacks left in this war or no accounts left (dealt with in war_call)
+                        return bases
             else:
                 # TODO change to elder channel or member status before going live
                 channel = self.bot.get_channel(settings['oak_channels']['test_chat'])
@@ -304,6 +308,9 @@ class War(commands.Cog):
             base_owner = await self.get_base_owner(war, discord_id=ctx.author.id)
             self.bot.logger.info(f"Base Owner: {base_owner}")
             if type(base_owner) is list:
+                if not base_owner:
+                    return await ctx.send("You had multiple players in this war, but all of your attacks have "
+                                          "been used.")
                 player_list = ""
                 for player in base_owner:
                     player_list += f"{player['map_position']}. {player['name']}\n"
@@ -503,6 +510,21 @@ class War(commands.Cog):
         sql = "UPDATE oak_calls SET cancelled = True WHERE call_id = $1"
         await self.bot.pool.execute(sql, call['call_id'])
         await ctx.send(f"Reserve removed for {base_display(base_owner)}.")
+
+    @war.command(name="update", hidden=True)
+    async def war_update(self, ctx, player: PlayerConverter = None, member: discord.User = None):
+        """Update record in Discord links"""
+        token = get_link_token()
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        url = "https://api.amazingspinach.com/links"
+        payload = {"playerTag": player.tag, "discordId": str(member.id)}
+        async with self.bot.session.put(url, json=payload, headers=headers) as r:
+            if r.status >= 300:
+                return await ctx.send(f"Error: {r.status} when adding for {player.name} ({player.tag}). "
+                                      f"Please make sure they are properly linked.")
+            else:
+                resp = await r.text()
+        await ctx.send(f"{resp}\n{player.name} ({player.tag}) has been successfully linked to {member.display_name}.")
 
     @war.command(name="add", hidden=True)
     async def war_add(self, ctx, player: PlayerConverter = None, member: discord.User = None):
