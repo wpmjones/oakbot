@@ -127,6 +127,7 @@ class Admin(commands.Cog):
         """Loads a module."""
         try:
             self.bot.load_extension(module)
+            self.bot.logger.debug(f"{module} loaded successfully")
         except commands.ExtensionError as e:
             await ctx.send(f'{e.__class__.__name__}: {e}')
         else:
@@ -138,6 +139,7 @@ class Admin(commands.Cog):
         """Unloads a module."""
         try:
             self.bot.unload_extension(module)
+            self.bot.logger.debug(f"{module} unloaded successfully")
         except commands.ExtensionError as e:
             await ctx.send(f'{e.__class__.__name__}: {e}')
         else:
