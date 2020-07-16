@@ -181,7 +181,7 @@ class War(commands.Cog):
             api_response = get_player_tag(base['discord_id'])
             if api_response:
                 if len(api_response) == 1:
-                    base['player_tag'] = api_response['playerTag']
+                    base['player_tag'] = api_response[0]
                     for member in war.clan.members:
                         if member.tag == base['player_tag']:
                             base['name'] = member.name
@@ -762,6 +762,7 @@ class War(commands.Cog):
 # tag attacks left
 # end of war report to oak-war
 # end of war report to elder-chat (missed attacks)
+
 
 def setup(bot):
     bot.add_cog(War(bot))
