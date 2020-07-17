@@ -46,6 +46,8 @@ class WarSetup(commands.Cog):
                     hours_left = war.end_time.seconds_until // 3600
                     minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
                     embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
+                    if not self.elder_channel:
+                        self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
                     await self.elder_channel.send(embed=embed)
                     self.bot.logger.info("inWar role added automatically")
                 else:
@@ -61,6 +63,8 @@ class WarSetup(commands.Cog):
                         await user.remove_roles(war_role, reason="Auto remove role after end of war.")
                 except:
                     self.bot.logger.exception("War Role Removal")
+                if not self.elder_channel:
+                    self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
                 await self.elder_channel.send("inWar roles removed for all players.")
                 self.bot.logger.info("inWar role removed automatically")
             # send after war reports
@@ -139,7 +143,8 @@ class WarSetup(commands.Cog):
     @commands.command(name="end2", hidden=True)
     async def war_end2(self, ctx):
         new_war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
-        elder_chat = self.bot.get_channel(settings['oak_channels']['elder_chat'])
+        if not self.elder_channel:
+            self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
         sql = "SELECT war_id FROM rcs_wars WHERE clan_tag = 'CVCJR89' AND prep_start_time = $1"
         war_id = await self.bot.pool.fetchval(sql, new_war.preparation_start_time.time)
         sql = "SELECT tag FROM rcs_war_members WHERE war_id = $1 AND is_opponent is False AND opted_in is False"
@@ -155,7 +160,7 @@ class WarSetup(commands.Cog):
                         value="\n".join("{} missed {}".format(member_display(m),
                             "1 attack" if len(m.attacks) == 1 else "2 attacks") for m in misses)
                             if len(misses) else "No missed attacks this war")
-        await elder_chat.send(embed=embed)
+        await self.elder_channel.send(embed=embed)
 
     @commands.command(name="warroles", aliases=["warrole"], hidden=True)
     async def war_roles(self, ctx):
