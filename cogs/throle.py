@@ -22,7 +22,7 @@ class ThRoles(commands.Cog):
         discord_id = get_discord_id(new_player.tag)
         guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
         user = guild.get_member(discord_id)
-        msg = f"Congratulations to {user.mention} on upgrading to Town Hall {new_player.town_hall}!"
+        msg = f"Congratulations to {user.mention} on upgrading {new_player.name} to Town Hall {new_player.town_hall}!"
         await coc_chat.send(msg)
         old_role = await self.get_th_role(old_player.town_hall)
         new_role = await self.get_th_role(new_player.town_hall)
