@@ -28,6 +28,8 @@ class WarSetup(commands.Cog):
         test_chat = self.bot.get_channel(364507837550034956)
         war_chat = self.bot.get_channel(settings['oak_channels']['oak_war'])
         war_role = self.guild.get_role(settings['oak_roles']['inwar'])
+        if not self.elder_channel:
+            self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
         if new_war.state == "preparation":
             await test_chat.send(f"{new_war.clan.name} is in preparation")
             names = []
@@ -46,8 +48,6 @@ class WarSetup(commands.Cog):
                     hours_left = war.end_time.seconds_until // 3600
                     minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
                     embed.set_footer(text=f"War ends in {hours_left} hours, {minutes_left} minutes.")
-                    if not self.elder_channel:
-                        self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
                     await self.elder_channel.send(embed=embed)
                     self.bot.logger.info("inWar role added automatically")
                 else:
@@ -63,11 +63,9 @@ class WarSetup(commands.Cog):
                         await user.remove_roles(war_role, reason="Auto remove role after end of war.")
                 except:
                     self.bot.logger.exception("War Role Removal")
-                if not self.elder_channel:
-                    self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
                 await self.elder_channel.send("inWar roles removed for all players.")
                 self.bot.logger.info("inWar role removed automatically")
-            # send after war reports
+            # send after war reports to oak-war
             results_text = {"won": "are victorious!",
                             "lost": "lost",
                             "tie": "tied! We actually tied!"
@@ -101,6 +99,24 @@ class WarSetup(commands.Cog):
                                 formatted_def) else "No one had more than 2 defenses.",
                             inline=False)
             await war_chat.send(embed=embed)
+            # send missed attacks report to elder channel
+            sql = "SELECT war_id FROM rcs_wars WHERE clan_tag = 'CVCJR89' AND prep_start_time = $1"
+            war_id = await self.bot.pool.fetchval(sql, new_war.preparation_start_time.time)
+            sql = "SELECT tag FROM rcs_war_members WHERE war_id = $1 AND is_opponent is False AND opted_in is False"
+            fetch = await self.bot.pool.fetch(sql, war_id)
+            misses = []
+            for row in fetch:
+                member = new_war.get_member(f"#{row[0]}")
+                if member and len(member.attacks) < 2:
+                    misses.append(member)
+            misses.sort(key=lambda m: m.map_position)
+            embed = discord.Embed(name="Elder war summary")
+            embed.add_field(name="Missed attacks",
+                            value="\n".join("{} missed {}".format(member_display(m),
+                                                                  "1 attack" if len(m.attacks) == 1 else "2 attacks")
+                                            for m in misses)
+                            if len(misses) else "No missed attacks this war")
+            await self.elder_channel.send(embed=embed)
         else:  # inWar
             await test_chat.send(f"{new_war.clan.name} is in war")
 
