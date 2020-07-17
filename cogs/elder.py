@@ -126,7 +126,7 @@ class Elder(commands.Cog):
         if fetched is not None:
             discord_id = fetched['slackId']
             player_tag = fetched['tag']
-            # self.bot.coc.remove_player_updates(player_tag)
+            self.bot.coc.remove_player_updates(player_tag)
             # TODO This work really ought to be done by the sheet, not Python
             result = sheet.values().get(spreadsheetId=spreadsheetId, range=currMemberRange).execute()
             values = result.get("values", [])

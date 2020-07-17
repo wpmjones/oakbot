@@ -183,7 +183,7 @@ class War(commands.Cog):
                 print(api_response)
                 if len(api_response) == 1:
                     base['player_tag'] = api_response[0]
-                    member = war.get_member_by(tag=base['player_tag'])
+                    member = war.get_member(base['player_tag'])
                     if member:
                         base['name'] = member.name
                         base['map_position'] = member.map_position
@@ -195,7 +195,7 @@ class War(commands.Cog):
                 else:
                     bases = []
                     for tag in api_response:
-                        member = war.get_member_by(tag=tag)
+                        member = war.get_member(tag)
                         if member and len(member.attacks) < 2:
                             base['tag'] = member.tag
                             base['name'] = member.name,
@@ -217,7 +217,7 @@ class War(commands.Cog):
                 raise ValueError(f"{kwargs.get('discord_id')} is missing from the links database. "
                                  f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
         elif "player_tag" in kwargs.keys():
-            member = war.get_member_by(tag=kwargs.get('player_tag'))
+            member = war.get_member(kwargs.get('player_tag'))
             if member:
                 base = {'tag': member.tag,
                         'name': member.name,
@@ -426,8 +426,6 @@ class War(commands.Cog):
         open_bases = ["Bases that are open"]
         targets = war.opponent.members.copy()
         targets.sort(key=lambda t: t.map_position)
-        # no idea why, but the next line is necessary for this to work <shrug>
-        xxx = war.get_member_by(name="fred")
         for target in targets:
             if target.best_opponent_attack:
                 if target.best_opponent_attack.stars == 3 or target.map_position in self.calls_by_target:
