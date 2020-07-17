@@ -8,7 +8,6 @@ import discord
 from discord.ext import commands
 from cogs.utils import context
 from cogs.utils.db import Psql
-from cogs.utils.error_handler import clash_event_error
 from datetime import datetime
 from loguru import logger
 from config import settings
@@ -19,6 +18,7 @@ initial_extensions = ["cogs.general",
                       "cogs.elder",
                       "cogs.owner",
                       "cogs.admin",
+                      "cogs.war"
                       ]
 
 if enviro == "LIVE":
@@ -27,8 +27,7 @@ if enviro == "LIVE":
     log_level = "INFO"
     coc_names = "galaxy"
     initial_extensions.append("cogs.members")
-    initial_extensions.append("cogs.war")
-    initial_extensions.append("cogs.warrole")
+    initial_extensions.append("cogs.war_state")
     initial_extensions.append("cogs.throle")
     initial_extensions.append("cogs.background")
     coc_email = settings['supercell']['user']
@@ -52,15 +51,9 @@ description = """Welcome to The Arborist - by TubaKid
 
 All commands must begin with a slash"""
 
-
-class COCClient(coc.EventsClient):
-    async def on_event_error(self, event_name, exception, *args, **kwargs):
-        await clash_event_error(self.bot, event_name, exception, *args, **kwargs)
-
-
 coc_client = coc.login(coc_email,
                        coc_pass,
-                       client=COCClient,
+                       client=coc.EventsClient,
                        key_names=coc_names,
                        key_count=2,
                        correct_tags=True)
