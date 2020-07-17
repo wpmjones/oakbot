@@ -677,7 +677,7 @@ class War(commands.Cog):
         sql = ("UPDATE rcs_war_members SET opted_in = NOT opted_in WHERE war_id = $1 AND is_opponent = False AND "
                "map_position = $2 "
                "RETURNING opted_in")
-        opted_in = await self.bot.poll.execute(sql, war_id, map_position)
+        opted_in = await self.bot.pool.execute(sql, war_id, map_position)
         if opted_in:
             return await ctx.send(f"{member_display(member)} marked as opted in.")
         else:
@@ -784,8 +784,7 @@ class War(commands.Cog):
 
 # marching orders
 # tag attacks left
-# end of war report to oak-war
-# end of war report to elder-chat (missed attacks)
+# diff color for enemy attacks
 
 
 def setup(bot):
