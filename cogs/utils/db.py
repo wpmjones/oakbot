@@ -1,4 +1,5 @@
 import asyncpg
+import json
 import pymssql
 import requests
 
@@ -41,6 +42,19 @@ def get_player_tag(discord_id):
     data = r.json()
     tags = [x['playerTag'] for x in data]
     return tags
+
+
+def get_discord_batch(tag_list):
+    """Get discord IDs for a list of player tags"""
+    token = get_link_token()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    url = "https://api.amazingspinach.com/links/batch"
+    r = requests.post(url, headers=headers, json=tag_list)
+    data = r.json()
+    response = {}
+    for row in data:
+        response[row['playerTags'][0]] = row['discordId']
+    return response
 
 
 class Sql:

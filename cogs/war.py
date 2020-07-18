@@ -5,7 +5,7 @@ import re
 from discord.ext import commands
 from cogs.utils.constants import clans
 from cogs.utils.converters import PlayerConverter
-from cogs.utils.db import get_link_token, get_player_tag, get_discord_id
+from cogs.utils.db import get_link_token, get_player_tag, get_discord_id, get_discord_batch
 from datetime import datetime, timedelta
 from config import settings, emojis
 
@@ -454,6 +454,7 @@ class War(commands.Cog):
         await self.init_calls(war)
         if not map_pos:
             base_owner = await self.get_base_owner(war, discord_id=ctx.author.id)
+            # TODO allow for alts if base_owner is a list
         else:
             base_owner = await self.get_base_owner(war, map_position=map_pos)
             if not self.is_elder(ctx.author):
@@ -683,31 +684,36 @@ class War(commands.Cog):
         else:
             return await ctx.send(f"Removed opted in for {member_display(member)}")
 
+    @commands.command(name="xtest")
+    async def xtest(self, ctx):
+        clan = await self.bot.coc.get_clan("#CVCJR89")
+        data = get_discord_batch([m.tag for m in clan.members])
+
     @war.command(name="users", hidden=True)
     async def war_users(self, ctx):
         """Reports the links between discord and player tags"""
         if not self.is_elder(ctx.author):
             return await ctx.send("You are not authorized to use this command.")
-        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
-        yes_ids = ["Players with associated Discord users"]
-        no_ids = ["Players without Discord users"]
-        free = ["Discord users without associated players"]
-        valid_ids = []
-        print("Starting clan members")
-        for member in clan.members:
-            discord_id = get_discord_id(member.tag)
-            if discord_id:
-                yes_ids.append(f"• {member.name} ({member.tag}) is <@{discord_id}> ({discord_id})")
-                valid_ids.append(discord_id)
-            else:
-                no_ids.append(f"• {member.name} ({member.tag})")
-        print("Starting Discord users")
-        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
-        for member in guild.members:
-            if not member.bot and member.id not in valid_ids:
-                free.append(f"• <@{member.id}> ({member.id})")
-        response = (yes_ids + no_ids + free)
-        await ctx.send_text(ctx.channel, response)
+        async with ctx.typing():
+            clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+            yes_ids = ["**Players with associated Discord users**"]
+            no_ids = ["**Players without Discord users**"]
+            free = ["**Discord users without associated players**"]
+            valid_ids = []
+            data = get_discord_batch([member.tag for member in clan.members])
+            for member in clan.members:
+                discord_id = data.get(member.tag, None)
+                if discord_id:
+                    yes_ids.append(f"• {member.name} ({member.tag}) is <@{discord_id}> ({discord_id})")
+                    valid_ids.append(discord_id)
+                else:
+                    no_ids.append(f"• {member.name} ({member.tag})")
+            guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+            for member in guild.members:
+                if not member.bot and member.id not in valid_ids:
+                    free.append(f"• <@{member.id}> ({member.id})")
+            response = yes_ids + no_ids + free
+            await ctx.send_text(ctx.channel, "\n".join(response))
 
     @war.command(name="help")
     async def war_help(self, ctx):
