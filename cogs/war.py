@@ -705,7 +705,7 @@ class War(commands.Cog):
                 discord_id = data.get(member.tag, None)
                 if discord_id:
                     yes_ids.append(f"• {member.name} ({member.tag}) is <@{discord_id}> ({discord_id})")
-                    valid_ids.append(discord_id)
+                    valid_ids.append(int(discord_id))
                 else:
                     no_ids.append(f"• {member.name} ({member.tag})")
             guild = self.bot.get_guild(settings['discord']['oakguild_id'])
