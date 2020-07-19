@@ -423,6 +423,7 @@ class War(commands.Cog):
         if war.state not in ("preparation", "inWar"):
             return await ctx.send("No active war.")
         await self.init_calls(war)
+        print(self.calls_by_target)
         open_bases = ["Bases that are open"]
         targets = war.opponent.members.copy()
         targets.sort(key=lambda t: t.map_position)
@@ -432,7 +433,7 @@ class War(commands.Cog):
                     continue
                 open_bases.append(f"• {member_display(target)} - {target.best_opponent_attack.stars} stars "
                                   f"{int(target.best_opponent_attack.destruction)}%")
-            else:
+            elif target.map_position not in self.calls_by_target:
                 open_bases.append(f"• {member_display(target)} - 0 stars")
         if len(open_bases) == 1:
             return await ctx.send("No open bases at this time.")
