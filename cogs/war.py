@@ -318,7 +318,7 @@ class War(commands.Cog):
                                         f"{player_list}",
                                         additional_options=len(base_owner))
                 base_owner = base_owner[resp - 1]
-            target_pos = args[0]
+            target_pos = int(args[0])
             self.bot.logger.info(f"Multi base: {base_display(base_owner)} calling {target_pos}")
         else:
             return await ctx.send("I was expecting one or two numbers and that's not what I got. Care to try again?")
