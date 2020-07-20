@@ -65,7 +65,7 @@ class Background(commands.Cog):
             stone_slammer = m.siege_machines[2].level or 0
             barracks = m.siege_machines[3].level or 0
             cursor.execute(sql1, m.tag[1:], m.name, m.exp_level, m.trophies, m.donations, m.received,
-                           m.league.name, m.league.badge.url, m.town_hall, m.war_stars, m.attack_wins,
+                           m.league.name, m.league.icon.url, m.town_hall, m.war_stars, m.attack_wins,
                            m.defense_wins, m.best_trophies, m.versus_trophies, m.best_versus_trophies,
                            m.versus_attack_wins, m.builder_hall, now)
             conn.commit()
