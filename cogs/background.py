@@ -52,14 +52,15 @@ class Background(commands.Cog):
                 "SET barbKing = ?, archQueen = ?, grandWarden = ?, royalChamp = ?, battleMachine = ?, "
                 "clanGames = ?, wallWrecker = ?, battleBlimp = ?, stoneSlammer = ?, siegeBarracks = ? "
                 "WHERE tag = ? AND timestamp = ?")
+        print("Starting member loop for SQL")
         to_google = []
         async for m in clan.get_detailed_members():
             clan_games = m.get_achievement("Games Champion").value or 0
-            barb_king = m.get_hero("Barbarian King").level or 0
-            arch_queen = m.get_hero("Archer Queen").level or 0
-            grand_warden = m.get_hero("Grand Warden").level or 0
-            royal_champ = m.get_hero("Royal Champion").level or 0
-            battle_mach = m.get_hero("Battle Machine").level or 0
+            barb_king = m.get_hero("Barbarian King").level if m.get_hero("Barbarian King") else 0
+            arch_queen = m.get_hero("Archer Queen").level if m.get_hero("Archer Queen") else 0
+            grand_warden = m.get_hero("Grand Warden").level if m.get_hero("Grand Warden") else 0
+            royal_champ = m.get_hero("Royal Champion").level if m.get_hero("Royal Champion") else 0
+            battle_mach = m.get_hero("Battle Machine").level if m.get_hero("Battle Machine") else 0
             wall_wrecker = m.siege_machines[0].level or 0
             battle_blimp = m.siege_machines[1].level or 0
             stone_slammer = m.siege_machines[2].level or 0
@@ -85,8 +86,10 @@ class Background(commands.Cog):
         print("Done with SQL - Starting Google")
         conn.close()
         payload = {"type": "players", "data": to_google}
+        print(payload)
         url = "https://script.google.com/macros/s/AKfycbzhXbO1CCcRuPzTU0mos7MowcucvclAKokkTiq91463xW1ftQEO/exec"
         r = requests.post(url, data=json.dumps(payload))
+        print("Oak data push complete.")
         self.bot.logger.info("Oak data push complete.")
 
     @oak_data_push.before_loop
