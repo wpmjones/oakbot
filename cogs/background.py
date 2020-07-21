@@ -55,16 +55,18 @@ class Background(commands.Cog):
         print("Starting member loop for SQL")
         to_google = []
         async for m in clan.get_detailed_members():
-            clan_games = m.get_achievement("Games Champion").value or 0
+            print(m.name)
+            clan_games = m.get_achievement("Games Champion").value if m.get_achievement("Games Champion") else 0
             barb_king = m.get_hero("Barbarian King").level if m.get_hero("Barbarian King") else 0
             arch_queen = m.get_hero("Archer Queen").level if m.get_hero("Archer Queen") else 0
             grand_warden = m.get_hero("Grand Warden").level if m.get_hero("Grand Warden") else 0
             royal_champ = m.get_hero("Royal Champion").level if m.get_hero("Royal Champion") else 0
             battle_mach = m.get_hero("Battle Machine").level if m.get_hero("Battle Machine") else 0
-            wall_wrecker = m.siege_machines[0].level or 0
-            battle_blimp = m.siege_machines[1].level or 0
-            stone_slammer = m.siege_machines[2].level or 0
-            barracks = m.siege_machines[3].level or 0
+            print(" - heros retrieved")
+            wall_wrecker = m.siege_machines[0].level if len(m.siege_machines) > 0 else 0
+            battle_blimp = m.siege_machines[1].level if len(m.siege_machines) > 1 else 0
+            stone_slammer = m.siege_machines[2].level if len(m.siege_machines) > 2 else 0
+            barracks = m.siege_machines[3].level if len(m.siege_machines) > 3 else 0
             cursor.execute(sql1, m.tag[1:], m.name, m.exp_level, m.trophies, m.donations, m.received,
                            m.league.name, m.league.icon.url, m.town_hall, m.war_stars, m.attack_wins,
                            m.defense_wins, m.best_trophies, m.versus_trophies, m.best_versus_trophies,
@@ -81,12 +83,11 @@ class Background(commands.Cog):
                               "builderHallLevel": m.builder_hall, "versusTrophies": m.versus_trophies,
                               "bestVersusTrophies": m.best_versus_trophies, "versusBattleWins": m.versus_attack_wins,
                               "clanGames": clan_games, "name": m.name, "expLevel": m.exp_level, "trophies": m.trophies,
-                              "doantions": m.donations, "donationsReceived": m.received, "clanRank": 0,
+                              "donations": m.donations, "donationsReceived": m.received, "clanRank": 0,
                               "league": m.league.name, "role": m.role.name})
         print("Done with SQL - Starting Google")
         conn.close()
         payload = {"type": "players", "data": to_google}
-        print(payload)
         url = "https://script.google.com/macros/s/AKfycbzhXbO1CCcRuPzTU0mos7MowcucvclAKokkTiq91463xW1ftQEO/exec"
         r = requests.post(url, data=json.dumps(payload))
         print("Oak data push complete.")
