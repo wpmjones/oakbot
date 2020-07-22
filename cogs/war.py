@@ -577,6 +577,8 @@ class War(commands.Cog):
             else:
                 next_war = today + timedelta((1 - today.weekday()) % 7)
             time_calc = f"War ended! Next war expected in {to_time((next_war - now).total_seconds())}."
+        if war.state == "notInWar":
+            await ctx.send(time_calc)
         elif now < war.start_time.time:
             time_calc = f"Prep day. {to_time(war.start_time.seconds_until)} until war starts."
         elif now < self.phase2(war.start_time.time).time:
