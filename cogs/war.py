@@ -203,6 +203,7 @@ class War(commands.Cog):
                             base['town_hall'] = member.town_hall,
                             base['attacks_left'] = 2 - len(member.attacks)
                             bases.append(base)
+                    self.bot.logger.info(bases)
                     if len(bases) == 1:
                         # this would happen if they have multiple accounts but only one account has attacks left
                         return bases[0]
@@ -324,6 +325,7 @@ class War(commands.Cog):
             return await ctx.send("I was expecting one or two numbers and that's not what I got. Care to try again?")
         # By this point, we should have a base_owner and a target_pos
         # Let's check to see if they are both valid
+        self.bot.logger.info(f"Base Owner: {base_owner['map_position']}\n{war.team_size}\n{target_pos}")
         if base_owner['map_position'] > war.team_size or target_pos > war.team_size:
             return await ctx.send(f"There are only {war.team_size} players in this war.")
         if not self.is_elder(ctx.author):
