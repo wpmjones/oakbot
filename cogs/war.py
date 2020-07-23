@@ -781,13 +781,16 @@ class War(commands.Cog):
         Mark call completed
         Report to Discord
         """
-        # TODO display differently if enemy is attacker
+        # TODO set up fresh attacks/new stars
         await self.init_calls(war)
         call = self.calls_by_attacker.get(attack.attacker.map_position)
         if call:
             await self.complete_call(call['call_id'])
         war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
-        stars = ":star:" * attack.stars
+        if attack.defender.is_opponent:
+            stars = emojis['stars']['new_star'] * attack.stars
+        else:
+            stars = emojis['stars']['new_star_enemy'] * attack.stars
         destruction = "" if attack.destruction == 3 else f"{int(attack.destruction)}%"
         await war_channel.send(f"{stars} {member_display(attack.attacker)} just attacked "
                                f"{member_display(attack.defender)} and got {attack.stars} stars "
