@@ -293,7 +293,7 @@ class War(commands.Cog):
         /war c5
         /war 4c8 (for calling alts)
         """
-        self.bot.logger.info(f"War Call Args: {args}\nLength: {len(args)}")
+        self.bot.logger.info(f"War Call Args: {args} - Length: {len(args)}")
         war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
         if war.state not in ["preparation", "inWar"]:
             return await ctx.send("No active war")
@@ -325,7 +325,7 @@ class War(commands.Cog):
             return await ctx.send("I was expecting one or two numbers and that's not what I got. Care to try again?")
         # By this point, we should have a base_owner and a target_pos
         # Let's check to see if they are both valid
-        self.bot.logger.info(f"Base Owner: {base_owner['map_position']}\n{war.team_size}\n{target_pos}")
+        self.bot.logger.info(f"Base Owner: {base_owner['map_position']} - {war.team_size} - {target_pos}")
         if base_owner['map_position'] > war.team_size or target_pos > war.team_size:
             return await ctx.send(f"There are only {war.team_size} players in this war.")
         if not self.is_elder(ctx.author):
@@ -353,7 +353,7 @@ class War(commands.Cog):
                                               f"{member_display(member)}.")
         # Looks good, let's save it
         await self.add_call(war, base_owner['map_position'], target_pos)
-        await ctx.send(f"{base_owner['map_position']}. {base_owner['name']} has called {target_pos}. {target.name}")
+        await ctx.send(f"{base_display(base_owner)} has called {member_display(target)}")
 
     @war.command(name="cancel")
     async def war_cancel(self, ctx, target_pos: int = None):
