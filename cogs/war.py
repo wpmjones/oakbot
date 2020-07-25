@@ -1,5 +1,6 @@
 import coc
 import discord
+import gspread
 import re
 
 from discord.ext import commands
@@ -7,6 +8,7 @@ from cogs.utils.constants import clans
 from cogs.utils.converters import PlayerConverter
 from cogs.utils.db import get_link_token, get_player_tag, get_discord_id, get_discord_batch
 from datetime import datetime, timedelta
+from urllib.parse import quote as urlencode
 from config import settings, emojis
 
 
@@ -530,6 +532,38 @@ class War(commands.Cog):
                 resp = await r.text()
         await ctx.send(f"{resp}\n{player.name} ({player.tag}) has been successfully linked to {member.display_name}.")
 
+    @war.command(name="check", hidden=True)
+    async def war_check(self, ctx, tag_or_id):
+        """Check links API to see who they match"""
+        if not self.is_elder(ctx.author):
+            return await ctx.send("You are not authorized to use this command.")
+        async with ctx.typing():
+            # Check Links API
+            token = get_link_token()
+            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+            url = f"https://api.amazingspinach.com/links/{urlencode(tag_or_id)}"
+            async with self.bot.session.get(url, headers=headers) as r:
+                if r.status >= 300:
+                    links_resp = f"Error: {r.status} when checking on {tag_or_id}."
+                else:
+                    resp = await r.json()
+                    links_resp = "**Discord Links API:**\n"
+                    tag_list = []
+                    for row in resp:
+                        links_resp += f"Player Tag {row['playerTag']} is linked to <@{row['discordId']}>.\n"
+                        tag_list.append(row['playerTag'])
+            # Check Oak Table
+            gc = gspread.oauth()
+            ot = gc.open("Oak Table")
+            sh = ot.worksheet("Current Members")
+            oak_resp = "**Oak Table Links:**\n"
+            for tag in tag_list:
+                player = await self.bot.coc.get_player(tag)
+                name_cell = sh.find(player.name)
+                discord_id = sh.cell(name_cell.row, 9).value
+                oak_resp += f"{player.name} ({player.tag}) is linked to <@{discord_id}> in the Oak Table.\n"
+            await ctx.send(f"{links_resp}\n{oak_resp}")
+
     @war.command(name="add", hidden=True)
     async def war_add(self, ctx, player: PlayerConverter = None, member: discord.User = None):
         """Add player to links discord API so we can connect tags to Discord IDs"""
@@ -546,6 +580,8 @@ class War(commands.Cog):
             if r.status >= 300:
                 await ctx.send("There was a problem adding the Discord ID to the Oak Table. Please contact "
                                "<@251150854571163648>.")
+            else:
+                await ctx.send("Successfully updated Oak Table.")
         # Add link to Discord Links API
         token = get_link_token()
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -553,7 +589,7 @@ class War(commands.Cog):
         payload = {"playerTag": player.tag, "discordId": str(member.id)}
         async with self.bot.session.post(url, json=payload, headers=headers) as r:
             if r.status >= 300:
-                return await ctx.send(f"Error: {r.status} when adding for {player.name} ({player.tag}). "
+                return await ctx.send(f"Error: {r.status} when adding for {player.name} ({player.tag}) to Links API. "
                                       f"Please make sure they are properly linked.")
             else:
                 resp = await r.text()
@@ -689,11 +725,6 @@ class War(commands.Cog):
         else:
             return await ctx.send(f"Removed opted in for {member_display(member)}")
 
-    @commands.command(name="xtest")
-    async def xtest(self, ctx):
-        clan = await self.bot.coc.get_clan("#CVCJR89")
-        data = get_discord_batch([m.tag for m in clan.members])
-
     @war.command(name="users", hidden=True)
     async def war_users(self, ctx):
         """Reports the links between discord and player tags"""
@@ -775,6 +806,17 @@ class War(commands.Cog):
         else:
             return False
 
+    @staticmethod
+    def build_stars(old, new, empty, is_opponent):
+        if not is_opponent:
+            return (f"{emojis['stars']['old_star'] * old}"
+                    f"{emojis['stars']['new_star'] * new}"
+                    f"{emojis['stars']['empty_star'] * empty}")
+        else:
+            return (f"{emojis['stars']['old_star_enemy'] * old}"
+                    f"{emojis['stars']['new_star_enemy'] * new}"
+                    f"{emojis['stars']['empty_star'] * empty}")
+
     @coc.WarEvents.war_attack(clans['Reddit Oak'])
     async def on_war_attack(self, attack, war):
         """Actions taken whenever a new attack happens
@@ -786,11 +828,19 @@ class War(commands.Cog):
         call = self.calls_by_attacker.get(attack.attacker.map_position)
         if call:
             await self.complete_call(call['call_id'])
-        war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
-        if attack.defender.is_opponent:
-            stars = emojis['stars']['new_star'] * attack.stars
+        war_channel = self.bot.get_channel(364507837550034956)   # settings['oak_channels']['oak_war'])
+        empty = 3 - attack.stars
+        if attack.is_fresh_attack:
+            old = 0
+            new = attack.stars
         else:
-            stars = emojis['stars']['new_star_enemy'] * attack.stars
+            old = attack.defender.best_opponent_attack.stars
+            if attack.stars > old:
+                new = attack.stars - old
+            else:
+                old = attack.stars
+                new = 0
+        stars = self.build_stars(old, new, empty, attack.attacker.is_opponent)
         destruction = "" if attack.destruction == 3 else f"{int(attack.destruction)}%"
         await war_channel.send(f"{stars} {member_display(attack.attacker)} just attacked "
                                f"{member_display(attack.defender)} and got {attack.stars} stars "
@@ -798,7 +848,6 @@ class War(commands.Cog):
 
 # marching orders
 # tag attacks left
-# diff color for enemy attacks
 
 
 def setup(bot):

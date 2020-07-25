@@ -1,3 +1,4 @@
+import gspread
 import json
 import pyodbc
 import requests
@@ -146,7 +147,12 @@ class Background(commands.Cog):
                     await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
                                                                     "in Oak. You're welcome!")
             except ValueError:
-                not_in_links.append(f"{member.name} ({member.tag})")
+                gc = gspread.oauth()
+                ot = gc.open("Oak Table")
+                sh = ot.worksheet("Current Members")
+                name_cell = sh.find(member.name)
+                if name_cell.row < 55:
+                    not_in_links.append(f"{member.name} ({member.tag})")
         if not_in_links:
             channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
             new_line = "\n"

@@ -1,4 +1,5 @@
 import discord
+import gspread
 
 from discord.ext import commands
 
@@ -6,6 +7,13 @@ from discord.ext import commands
 class OwnerCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command(name="gspread", hidden=True)
+    @commands.is_owner()
+    async def gspread(self, ctx):
+        gc = gspread.oauth()
+        sh = gc.open("Oak Table")
+        await ctx.send(f"Success!  A3 = {sh.sheet1.get('A3')}")
 
     @commands.command(name="clear", hidden=True)
     @commands.is_owner()

@@ -12,3 +12,4 @@ asyncio>=3.4.3
 Pillow>=7.1.2
 PyYAML>=5.3.1
 aiohttp>=3.6.2
+gspread>=3.6.0
