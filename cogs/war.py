@@ -828,7 +828,7 @@ class War(commands.Cog):
         call = self.calls_by_attacker.get(attack.attacker.map_position)
         if call:
             await self.complete_call(call['call_id'])
-        war_channel = self.bot.get_channel(364507837550034956)   # settings['oak_channels']['oak_war'])
+        war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
         empty = 3 - attack.stars
         if attack.is_fresh_attack:
             old = 0
