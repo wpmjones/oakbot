@@ -53,17 +53,15 @@ class Background(commands.Cog):
                 "SET barbKing = ?, archQueen = ?, grandWarden = ?, royalChamp = ?, battleMachine = ?, "
                 "clanGames = ?, wallWrecker = ?, battleBlimp = ?, stoneSlammer = ?, siegeBarracks = ? "
                 "WHERE tag = ? AND timestamp = ?")
-        print("Starting member loop for SQL")
+        self.bot.logger.info("Starting member loop for SQL")
         to_google = []
         async for m in clan.get_detailed_members():
-            print(m.name)
             clan_games = m.get_achievement("Games Champion").value if m.get_achievement("Games Champion") else 0
             barb_king = m.get_hero("Barbarian King").level if m.get_hero("Barbarian King") else 0
             arch_queen = m.get_hero("Archer Queen").level if m.get_hero("Archer Queen") else 0
             grand_warden = m.get_hero("Grand Warden").level if m.get_hero("Grand Warden") else 0
             royal_champ = m.get_hero("Royal Champion").level if m.get_hero("Royal Champion") else 0
             battle_mach = m.get_hero("Battle Machine").level if m.get_hero("Battle Machine") else 0
-            print(" - heros retrieved")
             wall_wrecker = m.siege_machines[0].level if len(m.siege_machines) > 0 else 0
             battle_blimp = m.siege_machines[1].level if len(m.siege_machines) > 1 else 0
             stone_slammer = m.siege_machines[2].level if len(m.siege_machines) > 2 else 0
@@ -86,12 +84,11 @@ class Background(commands.Cog):
                               "clanGames": clan_games, "name": m.name, "expLevel": m.exp_level, "trophies": m.trophies,
                               "donations": m.donations, "donationsReceived": m.received, "clanRank": 0,
                               "league": m.league.name, "role": m.role.name})
-        print("Done with SQL - Starting Google")
+        self.bot.logger.info("Done with SQL - Starting Google")
         conn.close()
         payload = {"type": "players", "data": to_google}
         url = "https://script.google.com/macros/s/AKfycbzhXbO1CCcRuPzTU0mos7MowcucvclAKokkTiq91463xW1ftQEO/exec"
         r = requests.post(url, data=json.dumps(payload))
-        print("Oak data push complete.")
         self.bot.logger.info("Oak data push complete.")
 
     @oak_data_push.before_loop
@@ -140,19 +137,20 @@ class Background(commands.Cog):
             try:
                 discord_id = get_discord_id(member.tag)
                 if not discord_id:
-                    not_in_links.append(f"{member.name} ({member.tag})")
+                    gc = gspread.oauth()
+                    ot = gc.open("Oak Table")
+                    sh = ot.worksheet("Current Members")
+                    name_cell = sh.find(member.name)
+                    if 0 < name_cell.row < 55:
+                        self.bot.logger.debug(f"Skipping {member.name} ({member.tag}) since it appears they are new.")
+                        not_in_links.append(f"{member.name} ({member.tag})")
                     continue
                 discord_member = self.guild.get_member(discord_id)
                 if quercus_role in discord_member.roles:
                     await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
                                                                     "in Oak. You're welcome!")
             except ValueError:
-                gc = gspread.oauth()
-                ot = gc.open("Oak Table")
-                sh = ot.worksheet("Current Members")
-                name_cell = sh.find(member.name)
-                if name_cell.row < 55:
-                    not_in_links.append(f"{member.name} ({member.tag})")
+                self.bot.logger.info(f"Value error dealing with {member.name} ({member.tag})")
         if not_in_links:
             channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
             new_line = "\n"
