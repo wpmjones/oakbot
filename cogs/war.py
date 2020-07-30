@@ -179,10 +179,8 @@ class War(commands.Cog):
         """
         if "discord_id" in kwargs.keys():
             base = {'discord_id': kwargs.get('discord_id')}
-            print(base)
             api_response = get_player_tag(base['discord_id'])
             if api_response:
-                print(api_response)
                 if len(api_response) == 1:
                     base['player_tag'] = api_response[0]
                     member = war.get_member(base['player_tag'])
@@ -200,11 +198,12 @@ class War(commands.Cog):
                         member = war.get_member(tag)
                         if member and len(member.attacks) < 2:
                             base['tag'] = member.tag
-                            base['name'] = member.name,
-                            base['map_position'] = member.map_position,
-                            base['town_hall'] = member.town_hall,
+                            base['name'] = member.name
+                            base['map_position'] = member.map_position
+                            base['town_hall'] = member.town_hall
                             base['attacks_left'] = 2 - len(member.attacks)
-                            bases.append(base)
+                            base_copy = base.copy()
+                            bases.append(base_copy)
                     self.bot.logger.info(bases)
                     if len(bases) == 1:
                         # this would happen if they have multiple accounts but only one account has attacks left
