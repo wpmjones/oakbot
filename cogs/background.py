@@ -152,7 +152,7 @@ class Background(commands.Cog):
             except ValueError:
                 self.bot.logger.info(f"Value error dealing with {member.name} ({member.tag})")
         if not_in_links:
-            channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
+            channel = self.guild.get_channel(settings['oak_channels']['member_status_chat'])
             new_line = "\n"
             await channel.send(f"The following players in Oak are not in the links API:\n"
                                f"{new_line.join(not_in_links)}")
