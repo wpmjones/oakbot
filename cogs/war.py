@@ -829,18 +829,16 @@ class War(commands.Cog):
             await self.complete_call(call['call_id'])
         war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
         empty = 3 - attack.stars
-        # if attack.is_fresh_attack:
-        #     old = 0
-        #     new = attack.stars
-        # else:
-        #     old = attack.defender.best_opponent_attack.stars
-        #     if attack.stars > old:
-        #         new = attack.stars - old
-        #     else:
-        #         old = attack.stars
-        #         new = 0
-        old = 0
-        new = attack.stars
+        if attack.is_fresh_attack:
+            old = 0
+            new = attack.stars
+        else:
+            old = attack.defender.previous_best_opponent_attack.stars
+            if attack.stars > old:
+                new = attack.stars - old
+            else:
+                old = attack.stars
+                new = 0
         stars = self.build_stars(old, new, empty, attack.attacker.is_opponent)
         destruction = "" if attack.destruction == 3 else f"{int(attack.destruction)}%"
         await war_channel.send(f"{stars} {member_display(attack.attacker)} just attacked "
