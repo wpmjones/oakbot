@@ -49,11 +49,11 @@ class General(commands.Cog):
             return await ctx.send(f"{emojis['other']['redx']} You must provide a valid in-game name or tag for this "
                                   f"command. Try `/player TubaKid`")
         # pull non-in-game stats from db
-        with Sql(as_dict=True) as cursor:
+        with Sql() as cursor:
             sql = (f"SELECT tag, numWars, avgStars, warStats, joinDate, slackId "
                    f"FROM coc_oak_players "
-                   f"WHERE tag = %s")
-            cursor.execute(sql, (player.tag[1:], ))
+                   f"WHERE tag = ?")
+            cursor.execute(sql, player.tag[1:])
             oak_stats = cursor.fetchone()
         try:
             if not oak_stats:
@@ -68,7 +68,7 @@ class General(commands.Cog):
                                   f"<@251150854571163648> I was trying to look up {player.name} "
                                   f"but the world conspired against me.")
         # retrieve player info from coc.py
-        player_tag = f"#{oak_stats['tag']}"
+        player_tag = f"#{oak_stats.tag}"
         player = await self.bot.coc.get_player(player_tag)
         troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
         sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer", "Siege Barracks"]
@@ -125,9 +125,9 @@ class General(commands.Cog):
         embed.add_field(name="War Stars", value=player.war_stars, inline=True)
         embed.add_field(name="Attack Wins", value=player.attack_wins, inline=True)
         embed.add_field(name="Defense Wins", value=player.defense_wins, inline=True)
-        embed.add_field(name="Wars in Oak", value=oak_stats['numWars'], inline=True)
-        embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats['avgStars'], 2)), inline=True)
-        embed.add_field(name="This Season", value=oak_stats['warStats'], inline=False)
+        embed.add_field(name="Wars in Oak", value=oak_stats.numWars, inline=True)
+        embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats.avgStars, 2)), inline=True)
+        embed.add_field(name="This Season", value=oak_stats.warStats, inline=False)
         embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
         if sm_levels != "":
             embed.add_field(name="Siege Machines", value=sm_levels, inline=False)
@@ -144,7 +144,7 @@ class General(commands.Cog):
         if builder_hero != "":
             embed.add_field(name="Hero", value=builder_hero, inline=False)
         embed.set_footer(icon_url=player.clan.badge.url,
-                         text=f"Member of Reddit Oak since {oak_stats['joinDate'].strftime('%e %B, %Y')}")
+                         text=f"Member of Reddit Oak since {oak_stats.joinDate.strftime('%e %B, %Y')}")
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                               f"Request complete: /player {player.name}")
         await ctx.send(embed=embed)

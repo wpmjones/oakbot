@@ -23,6 +23,9 @@ class WarSetup(commands.Cog):
     @coc.WarEvents.state(clans['Reddit Oak'])
     async def on_war_state_change(self, old_war, new_war):
         """ Assign inWar role to those participating in the current war """
+        if new_war.is_cwl:
+            # I'm not going to use this for CWL right now
+            return
         if not self.guild:
             self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
         test_chat = self.bot.get_channel(364507837550034956)

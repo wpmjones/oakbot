@@ -115,17 +115,17 @@ class Elder(commands.Cog):
             ban = 1
         else:
             ban = 0
-        with Sql(as_dict=True) as cursor:
+        with Sql() as cursor:
             if player.startswith("#"):
                 sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE tag = %s"
-                cursor.execute(sql, (player[1:],))
+                cursor.execute(sql, player[1:])
             else:
                 sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE playerName = %s"
-                cursor.execute(sql, (player,))
+                cursor.execute(sql, player)
             fetched = cursor.fetchone()
         if fetched is not None:
-            discord_id = fetched['slackId']
-            player_tag = fetched['tag']
+            discord_id = fetched.slackId
+            player_tag = fetched.tag
             self.bot.coc.remove_player_updates(player_tag)
             # TODO This work really ought to be done by the sheet, not Python
             result = sheet.values().get(spreadsheetId=spreadsheetId, range=currMemberRange).execute()
@@ -179,7 +179,7 @@ class Elder(commands.Cog):
         /warn remove #
         """
         if authorized(ctx.author.roles) or ctx.author.id == 251150854571163648:
-            with Sql(as_dict=True) as cursor:
+            with Sql() as cursor:
                 if player == "list" or player is None:
                     cursor.execute("SELECT strikeNum, playerName, warnDate, warning, warningId "
                                    "FROM coc_oak_warnList "
@@ -189,10 +189,10 @@ class Elder(commands.Cog):
                                           description="All warnings expire after 60 days.",
                                           color=color_pick(181, 0, 0))
                     for strike in strikes:
-                        strike_emoji = ":x:" * strike['strikeNum']
-                        strike_text = (f"{strike['warning']}\nIssued on: {strike['warnDate']}\nWarning ID: "
-                                       f"{str(strike['warningId'])}")
-                        embed.add_field(name=f"{strike['playerName']} {strike_emoji}", value=strike_text, inline=False)
+                        strike_emoji = ":x:" * strike.strikeNum
+                        strike_text = (f"{strike.warning}\nIssued on: {strike.warnDate}\nWarning ID: "
+                                       f"{str(strike.warningId)}")
+                        embed.add_field(name=f"{strike.playerName} {strike_emoji}", value=strike_text, inline=False)
                     embed.set_footer(icon_url=("https://openclipart.org/image/300px/svg_to_png/109/"
                                                "molumen-red-round-error-warning-icon.png"),
                                      text="To remove a strike, use /warn remove <Warning ID>")
@@ -206,8 +206,8 @@ class Elder(commands.Cog):
                     if fetched is None:
                         await ctx.send("No warning exists with that ID.  Please check the ID and try again.")
                         return
-                    sent_msg = await ctx.send(f"Are you sure you want to remove {fetched['warning']} "
-                                              f"from {fetched['playerName']}?")
+                    sent_msg = await ctx.send(f"Are you sure you want to remove {fetched.warning} "
+                                              f"from {fetched.playerName}?")
                     await sent_msg.add_reaction(reactions[0][2:-1])
                     await sent_msg.add_reaction(reactions[1][2:-1])
 
@@ -233,9 +233,9 @@ class Elder(commands.Cog):
                         return
                     cursor.execute(f"DELETE FROM coc_oak_warnings WHERE warningId = {warning[0]}")
                     self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                          f"Request: Removal of {fetched['warning']} for {fetched['playerName']}")
-                    await sent_msg.edit(content=f"Warning **{fetched['warning']}** "
-                                                f"removed for **{fetched['playerName']}**.")
+                                          f"Request: Removal of {fetched.warning} for {fetched.playerName}")
+                    await sent_msg.edit(content=f"Warning **{fetched.warning}** "
+                                                f"removed for **{fetched.playerName}**.")
                 else:
                     # add a player warning
                     warning.replace("'", "''")
@@ -248,21 +248,20 @@ class Elder(commands.Cog):
                     fetched = cursor.fetchone()
                     if fetched is not None:
                         cursor.execute(f"INSERT INTO coc_oak_warnings (tag, warnDate, warning) "
-                                       f"VALUES ('{fetched['tag']}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
+                                       f"VALUES ('{fetched.tag}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
                                        f"'{warning}')")
-                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = %s",
-                                       (fetched['playerName'], ))
+                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = %s", fetched.playerName)
                         strike_list = cursor.fetchall()
-                        member = ctx.guild.get_member(int(fetched['slackId']))
-                        await ctx.send("Warning added for " + fetched['playerName'])
+                        member = ctx.guild.get_member(int(fetched.slackId))
+                        await ctx.send("Warning added for " + fetched.playerName)
                         await member.send("Warning added!")
                         emoji = ":x:"
                         for strike in strike_list:
-                            await ctx.send(emoji + " " + strike['warnDate'] + " - " + strike['warning'])
-                            await member.send(f"{emoji} {strike['warnDate']} - {strike['warning']}")
+                            await ctx.send(emoji + " " + strike.warnDate + " - " + strike.warning)
+                            await member.send(f"{emoji} {strike.warnDate} - {strike.warning}")
                             emoji += ":x:"
                         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                              f"Request: {fetched['playerName']} warned for {warning}")
+                                              f"Request: {fetched.playerName} warned for {warning}")
                     else:
                         self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                                 f"Problem: {player} not found in SQL database | Warning: {warning}")
