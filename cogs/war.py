@@ -25,15 +25,21 @@ def to_time(seconds):
 
 
 def get_best_stars(member):
-    if member.best_opponent_attack:
-        return member.best_opponent_attack.stars
+    try:
+        if member.best_opponent_attack:
+            return member.best_opponent_attack.stars
+    except AttributeError:
+        return 0
     else:
         return 0
 
 
 def get_best_percentage(member):
-    if member.best_opponent_attack:
-        return member.best_opponent_attack.destruction
+    try:
+        if member.best_opponent_attack:
+            return member.best_opponent_attack.destruction
+    except AttributeError:
+        return 0
     else:
         return 0
 
@@ -344,8 +350,11 @@ class War(commands.Cog):
         for member in war.opponent.members:
             if member.map_position == target_pos:
                 target = member  # for later use
-                if member.best_opponent_attack and member.best_opponent_attack.stars == 3:
-                    return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
+                try:
+                    if member.best_opponent_attack and member.best_opponent_attack.stars == 3:
+                        return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
+                except AttributeError:
+                    pass
         for call in self.calls:
             if call['target_pos'] == target_pos:
                 for member in war.opponent.members:
@@ -833,7 +842,10 @@ class War(commands.Cog):
             old = 0
             new = attack.stars
         else:
-            old = attack.defender.previous_best_opponent_attack.stars
+            try:
+                old = attack.defender.previous_best_opponent_attack.stars
+            except AttributeError:
+                old = 0
             if attack.stars > old:
                 new = attack.stars - old
             else:
