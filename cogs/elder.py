@@ -240,17 +240,17 @@ class Elder(commands.Cog):
                     # add a player warning
                     warning.replace("'", "''")
                     if player.startswith("#"):
-                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE tag = %s"
-                        cursor.execute(sql, (player[1:], ))
+                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE tag = ?"
+                        cursor.execute(sql, player[1:])
                     else:
-                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE playerName = %s"
-                        cursor.execute(sql, (player, ))
+                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE playerName = ?"
+                        cursor.execute(sql, player)
                     fetched = cursor.fetchone()
                     if fetched is not None:
                         cursor.execute(f"INSERT INTO coc_oak_warnings (tag, warnDate, warning) "
                                        f"VALUES ('{fetched.tag}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
                                        f"'{warning}')")
-                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = %s", fetched.playerName)
+                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = ?", fetched.playerName)
                         strike_list = cursor.fetchall()
                         member = ctx.guild.get_member(int(fetched.slackId))
                         await ctx.send("Warning added for " + fetched.playerName)
