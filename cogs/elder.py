@@ -117,10 +117,10 @@ class Elder(commands.Cog):
             ban = 0
         with Sql() as cursor:
             if player.startswith("#"):
-                sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE tag = %s"
+                sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE tag = ?"
                 cursor.execute(sql, player[1:])
             else:
-                sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE playerName = %s"
+                sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE playerName = ?"
                 cursor.execute(sql, player)
             fetched = cursor.fetchone()
         if fetched is not None:
