@@ -3,12 +3,15 @@ import asyncio
 import season
 
 from discord.ext import commands
-from cogs.utils.db import Sql
+from cogs.utils.db import Sql, get_discord_id
 from cogs.utils.checks import is_elder
+from cogs.utils.constants import clans
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from httplib2 import Http
+from io import BytesIO
 from oauth2client import file, client, tools
+from PIL import Image, ImageDraw, ImageFont
 from config import settings, color_pick, emojis
 
 
@@ -178,94 +181,95 @@ class Elder(commands.Cog):
         To remove a warning, request the list first to obtain the warning ID.
         /warn remove #
         """
+        conn = self.bot.pool
         if authorized(ctx.author.roles) or ctx.author.id == 251150854571163648:
-            with Sql() as cursor:
-                if player == "list" or player is None:
-                    cursor.execute("SELECT strikeNum, playerName, warnDate, warning, warningId "
-                                   "FROM coc_oak_warnList "
-                                   "ORDER BY playerName, strikeNum")
-                    strikes = cursor.fetchall()
-                    embed = discord.Embed(title="Reddit Oak Watchlist",
-                                          description="All warnings expire after 60 days.",
-                                          color=color_pick(181, 0, 0))
-                    for strike in strikes:
-                        strike_emoji = ":x:" * strike.strikeNum
-                        strike_text = (f"{strike.warning}\nIssued on: {strike.warnDate}\nWarning ID: "
-                                       f"{str(strike.warningId)}")
-                        embed.add_field(name=f"{strike.playerName} {strike_emoji}", value=strike_text, inline=False)
-                    embed.set_footer(icon_url=("https://openclipart.org/image/300px/svg_to_png/109/"
-                                               "molumen-red-round-error-warning-icon.png"),
-                                     text="To remove a strike, use /warn remove <Warning ID>")
-                    self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: List warnings")
-                    await ctx.send(embed=embed)
-                    return
-                elif player == "remove":
-                    reactions = [emojis['other']['upvote'], emojis['other']['downvote']]
-                    cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE warningId = {warning}")
-                    fetched = cursor.fetchone()
-                    if fetched is None:
-                        await ctx.send("No warning exists with that ID.  Please check the ID and try again.")
-                        return
-                    sent_msg = await ctx.send(f"Are you sure you want to remove {fetched.warning} "
-                                              f"from {fetched.playerName}?")
-                    await sent_msg.add_reaction(reactions[0][2:-1])
-                    await sent_msg.add_reaction(reactions[1][2:-1])
-
-                    def check(reaction, user):
-                        return user == ctx.message.author and str(reaction.emoji) in reactions
-
-                    try:
-                        reaction, user = await ctx.bot.wait_for("reaction_add", timeout=60.0, check=check)
-                        self.bot.logger.debug(f"Awaited reaction {reaction} with user {user}")
-                    except asyncio.TimeoutError:
-                        await sent_msg.edit(content="Removal cancelled because I'm feeling ignored. Don't ask me "
-                                                    "to do things then ignore my questions.")
-                    await sent_msg.clear_reactions()
-                    if str(reaction.emoji) == reactions[1]:
-                        await sent_msg.edit(content="Removal cancelled.  Maybe try again later if you feel up to it.")
-                        return
-                    elif str(reaction.emoji) == reactions[0]:
-                        await sent_msg.edit(content="Removal in progress...")
-                    else:
-                        await sent_msg.edit(content="Something has gone horribly wrong and you're going to "
-                                                    "have to talk to <@251150854571163648> about it. "
-                                                    "Sorry. :frowning2: ")
-                        return
-                    cursor.execute(f"DELETE FROM coc_oak_warnings WHERE warningId = {warning[0]}")
-                    self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                          f"Request: Removal of {fetched.warning} for {fetched.playerName}")
-                    await sent_msg.edit(content=f"Warning **{fetched.warning}** "
-                                                f"removed for **{fetched.playerName}**.")
+            if player == "list" or player is None:
+                sql = ("SELECT strick_num, player_name, timestamp, warning, warning_id "
+                       "FROM oak_warn_list "
+                       "ORDER BY player_name, strike_num")
+                strikes = await conn.fetch(sql)
+                # TODO swap in images
+                embed = discord.Embed(title="Reddit Oak Watchlist",
+                                      description="All warnings expire after 60 days.",
+                                      color=color_pick(181, 0, 0))
+                for strike in strikes:
+                    strike_emoji = ":x:" * strike['strike_num']
+                    strike_text = (f"{strike['warning']}\nIssued on: {strike['warnDate']}\nWarning ID: "
+                                   f"{str(strike['warning_id'])}")
+                    embed.add_field(name=f"{strike['player_name']} {strike_emoji}", value=strike_text, inline=False)
+                embed.set_footer(icon_url=("https://openclipart.org/image/300px/svg_to_png/109/"
+                                           "molumen-red-round-error-warning-icon.png"),
+                                 text="To remove a strike, use /warn remove <Warning ID>")
+                self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: List warnings")
+                await ctx.send(embed=embed)
+                return
+            elif player == "remove":
+                warning_id = warning
+                sql = ("SELECT strike_num, player_name, timestamp, warning, warning_id "
+                       "FROM oak_warn_list "
+                       "WHERE warning_id = $1")
+                fetch = await conn.fetch(sql, warning_id)
+                if fetch is None:
+                    return await ctx.send("No warning exists with that ID.  Please check the ID and try again.")
+                response = await ctx.prompt(f"Are you sure you want to remove {fetch['warning']} "
+                                            f"from {fetch['player_name']}?")
+                if not response:
+                    return await ctx.send(content="Removal cancelled.  Maybe try again later if you feel up to it.")
+                sent_msg = await ctx.send(content="Removal in progress...")
+                sql = "DELETE FROM oak_warnings WHERE warning_id = $1"
+                await conn.execute(sql, warning_id)
+                self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                      f"Request: Removal of {fetch['warning']} for {fetch['player_name']}")
+                await sent_msg.edit(content=f"Warning **{fetch['warning']}** "
+                                            f"removed for **{fetch['player_name']}**.")
+            else:
+                # add a player warning
+                if player.startswith("#"):
+                    member = await self.bot.coc.get_player(player)
                 else:
-                    # add a player warning
-                    warning.replace("'", "''")
-                    if player.startswith("#"):
-                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE tag = ?"
-                        cursor.execute(sql, player[1:])
-                    else:
-                        sql = "SELECT playerName, tag, slackId FROM coc_oak_players WHERE playerName = ?"
-                        cursor.execute(sql, player)
-                    fetched = cursor.fetchone()
-                    if fetched is not None:
-                        cursor.execute(f"INSERT INTO coc_oak_warnings (tag, warnDate, warning) "
-                                       f"VALUES ('{fetched.tag}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
-                                       f"'{warning}')")
-                        cursor.execute(f"SELECT * FROM coc_oak_warnList WHERE playerName = ?", fetched.playerName)
-                        strike_list = cursor.fetchall()
-                        member = ctx.guild.get_member(int(fetched.slackId))
-                        await ctx.send("Warning added for " + fetched.playerName)
-                        await member.send("Warning added!")
-                        emoji = ":x:"
-                        for strike in strike_list:
-                            await ctx.send(emoji + " " + strike.warnDate + " - " + strike.warning)
-                            await member.send(f"{emoji} {strike.warnDate} - {strike.warning}")
-                            emoji += ":x:"
-                        self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                              f"Request: {fetched.playerName} warned for {warning}")
-                    else:
-                        self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                                f"Problem: {player} not found in SQL database | Warning: {warning}")
-                        return await ctx.send("You have provided an invalid player name.  Please try again.")
+                    clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+                    member = clan.get_member_by(name=player)
+                if not member:
+                    self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                                            f"Problem: {player} not found in Clash API | Warning: {warning}")
+                    return await ctx.send("You have provided an invalid player name.  Please try again.")
+                # Everything looks good, let's add to the database
+                sql = ("INSERT INTO oak_warnings (player_tag, timestamp, warning) "
+                       "VALUES ($1, $2, $3)")
+                # await conn.execute(sql, member.tag[1:], datetime.utcnow(), warning)
+                sql = ("SELECT strike_num, player_name, timestamp, warning, warning_id "
+                       "FROM oak_warn_list WHERE player_name = $1")
+                strike_list = await conn.fetch(sql, member.name)
+                # user = ctx.guild.get_member(get_discord_id(member.tag))
+                if len(strike_list) == 1:
+                    height = 200
+                elif len(strike_list) == 2:
+                    height = 275
+                elif len(strike_list) == 3:
+                    height = 350
+                else:
+                    height = 425
+                width = 1900
+                header_font = ImageFont.truetype("fonts/sc-magic.ttf", 48)
+                font = ImageFont.truetype("fonts/JosefinSans.ttf", 54)
+                # TODO Change to Image.open and create nice image on PS
+                bg = Image.new("RGBA", (width, height), "black")
+                draw = ImageDraw.Draw(bg)
+                draw.text((30, 25), f"Warnings for {member.name}", (245, 245, 245), font=header_font)
+                y = 135
+                for strike in strike_list:
+                    draw.text((25, y), f"{strike['strike_num']}.", (225, 225, 225), font=font)
+                    strike_text = f"{strike['warning']} ({strike['timestamp'].strftime('%Y-%m-%d')})"
+                    draw.text((75, y), strike_text, (245, 245, 245), font=font)
+                    y += 60
+                buffer = BytesIO()
+                bg.save(buffer, "png")
+                buffer.seek(0)
+                await ctx.send(file=discord.File(buffer, filename="warning.png"))
+                await ctx.send("Warning added for " + member.name)
+                # await member.send("Warning added!")
+                # self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
+                #                       f"Request: {fetched.playerName} warned for {warning}")
         else:
             self.bot.logger.warning(f"User not authorized - "
                                     f"{ctx.command} by {ctx.author} in {ctx.channel} | "
