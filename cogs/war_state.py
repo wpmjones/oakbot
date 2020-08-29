@@ -121,7 +121,8 @@ class WarSetup(commands.Cog):
                             if len(misses) else "No missed attacks this war")
             await self.elder_channel.send(embed=embed)
         else:  # inWar
-            await test_chat.send(f"{new_war.clan.name} is in war")
+            if new_war.clan.name:
+                await test_chat.send(f"{new_war.clan.name} is in war")
 
     @commands.command(name="end1", hidden=True)
     async def war_end1(self, ctx):
