@@ -20,8 +20,10 @@ class ThRoles(commands.Cog):
         self.bot.logger.info(f"{new_player.name} changed from TH{old_player.town_hall} to TH{new_player.town_hall}")
         coc_chat = self.bot.get_channel(settings["oak_channels"]["coc_chat"])
         discord_id = get_discord_id(new_player.tag)
+        self.bot.logger.info(f"Town Hall (line 23): Discord ID = {discord_id}")
         guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
         user = guild.get_member(discord_id)
+        self.bot.logger.info(f"Discord User: {user.display_name}")
         msg = f"Congratulations to {user.mention} on upgrading {new_player.name} to Town Hall {new_player.town_hall}!"
         await coc_chat.send(msg)
         old_role = await self.get_th_role(old_player.town_hall)
