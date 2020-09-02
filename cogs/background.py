@@ -132,7 +132,6 @@ class Background(commands.Cog):
         if not self.guild:
             self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
         quercus_role = self.guild.get_role(settings['oak_roles']['quercus'])
-        self.bot.logger.info(type(quercus_role))
         not_in_links = []
         for member in clan.members:
             try:
