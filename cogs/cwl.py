@@ -101,6 +101,7 @@ class Cwl(commands.Cog):
         content = (f"**CWL Roster Change**\n"
                    f"Old Breakdown: {old_breakdown}\n"
                    f"New Breakdown: {new_breakdown}")
+        await elder_channel.send(content)
         await elder_channel.send("\n".join(member_list))
 
 
