@@ -300,8 +300,7 @@ class War(commands.Cog):
         /war c5
         /war 4c8 (for calling alts)
         """
-        self.bot.logger.info(f"War Call Args: {args} - Length: {len(args)}")
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ["preparation", "inWar"]:
             return await ctx.send("No active war")
         await self.init_calls(war)
@@ -372,7 +371,7 @@ class War(commands.Cog):
         **Examples:**
         /war cancel 3
         """
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ["preparation", "inWar"]:
             return await ctx.send("No active war")
         if target_pos > war.team_size:
@@ -407,7 +406,7 @@ class War(commands.Cog):
     @war.command(name="calls")
     async def war_calls(self, ctx):
         """Returns a list of all active calls for the current war"""
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ("preparation", "inWar"):
             return await ctx.send("No active war.")
         await self.init_calls(war)
@@ -431,7 +430,7 @@ class War(commands.Cog):
     @war.command(name="open")
     async def war_open(self, ctx):
         """Returns any base that has not been 3 starred and does not have an active call"""
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ("preparation", "inWar"):
             return await ctx.send("No active war.")
         await self.init_calls(war)
@@ -461,7 +460,7 @@ class War(commands.Cog):
             3: "Waiting on others",
             4: "Waiting for heroes to wake up",
         }
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ("preparation", "inWar"):
             return await ctx.send("No active war.")
         await self.init_calls(war)
@@ -505,7 +504,7 @@ class War(commands.Cog):
     @war.command(name="unreserve", hidden=True)
     async def war_unreserve(self, ctx, map_pos=None):
         """Remove reserve for the given map position"""
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ("preparation", "inWar"):
             return await ctx.send("No active war.")
         if not map_pos:
@@ -614,7 +613,7 @@ class War(commands.Cog):
         th_list = (f"{emojis['th_icon'][13]} {emojis['th_icon'][12]} {emojis['th_icon'][11]} {emojis['th_icon'][10]} "
                    f"{emojis['th_icon'][9]}")
         # get war again with custom class
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         now = datetime.utcnow()
         if war.state not in ["preparation", "inWar"]:
             today = now.replace(hour=23, minute=0, second=0, microsecond=0)
@@ -672,7 +671,7 @@ class War(commands.Cog):
     @war.command(name="lineup")
     async def war_lineup(self, ctx):
         """Returns Oak's lineup for the current war"""
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ["preparation", "inWar"]:
             now = datetime.utcnow()
             today = now.replace(hour=23, minute=0, second=0, microsecond=0)
@@ -719,7 +718,7 @@ class War(commands.Cog):
             return await ctx.send("You are not authorized to use this command.")
         if not map_position:
             return await ctx.send("You must provide a base number for this command.")
-        war = await self.bot.coc.get_clan_war(clans['Reddit Oak'])
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ["preparation", "inWar"]:
             return await ctx.send("No active war")
         war_id = await self.get_war_id(war.preparation_start_time.time)
