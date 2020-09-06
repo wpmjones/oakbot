@@ -180,7 +180,7 @@ class War(commands.Cog):
             self.calls_by_target[row['target_pos']] = call
 
     async def get_base_owner(self, war, **kwargs):
-        """Can pass in discord_id, player_tag, or map_ position
+        """Can pass in discord_id, player_tag, or map_position
         All others will be ignored
         """
         if "discord_id" in kwargs.keys():
@@ -190,9 +190,13 @@ class War(commands.Cog):
                 if len(api_response) == 1:
                     base['player_tag'] = api_response[0]
                     member = war.get_member(base['player_tag'])
+                    if war.type == "cwl":
+                        map_position = self.get_map_position(war, member.map_position, False)
+                    else:
+                        map_position = member.map_position
                     if member:
                         base['name'] = member.name
-                        base['map_position'] = member.map_position
+                        base['map_position'] = map_position
                         base['town_hall'] = member.town_hall
                         base['attacks_left'] = 2 - len(member.attacks)
                         return base
@@ -202,10 +206,14 @@ class War(commands.Cog):
                     bases = []
                     for tag in api_response:
                         member = war.get_member(tag)
+                        if war.type == "cwl":
+                            map_position = self.get_map_position(war, member.map_position, False)
+                        else:
+                            map_position = member.map_position
                         if member and len(member.attacks) < 2:
                             base['tag'] = member.tag
                             base['name'] = member.name
-                            base['map_position'] = member.map_position
+                            base['map_position'] = map_position
                             base['town_hall'] = member.town_hall
                             base['attacks_left'] = 2 - len(member.attacks)
                             base_copy = base.copy()
@@ -226,11 +234,15 @@ class War(commands.Cog):
                                  f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
         elif "player_tag" in kwargs.keys():
             member = war.get_member(kwargs.get('player_tag'))
+            if war.type == "cwl":
+                map_position = self.get_map_position(war, member.map_position, False)
+            else:
+                map_position = member.map_position
             if member:
                 base = {'tag': member.tag,
                         'name': member.name,
                         'discord_id': get_discord_id(member.tag),
-                        'map_position': member.map_position,
+                        'map_position': map_position,
                         'town_hall': member.town_hall,
                         'attacks_left': 2 - len(member.attacks)
                         }
@@ -239,7 +251,8 @@ class War(commands.Cog):
                 raise ValueError("This player is not in the current war.")
         elif "map_position" in kwargs.keys():
             base = {'map_position': int(kwargs.get('map_position'))}
-            member = war.get_member_by(map_position=base['map_position'], is_opponent=False)
+            roster_position = self.get_roster_position(war, base['map_position'], False)
+            member = war.get_member_by(map_position=roster_position, is_opponent=False)
             base['name'] = member.name
             base['tag'] = member.tag
             base['discord_id'] = get_discord_id(member.tag)
@@ -248,6 +261,36 @@ class War(commands.Cog):
             return base
         else:
             raise ValueError("No valid keyword argument provided for this function.")
+
+    def get_map_position(self, war, position, is_opponent):
+        """Convert roster position to map position"""
+        if not is_opponent:
+            members = war.clan.members
+        else:
+            members = war.opponent.members
+        members.sort(key=lambda m: m.map_position)
+        counter = 1
+        for member in members:
+            if position == member.map_position:
+                return counter
+            else:
+                counter += 1
+        return None
+
+    def get_roster_position(self, war, position, is_opponent):
+        """Convert real map position to roster position"""
+        if not is_opponent:
+            members = war.clan.members
+        else:
+            members = war.opponent.members
+        members.sort(key=lambda m: m.map_position)
+        counter = 1
+        for member in members:
+            if position == counter:
+                return member.map_position
+            else:
+                counter += 1
+        return None
 
     async def add_call(self, war, caller, target):
         start_time = war.start_time.time
@@ -331,7 +374,7 @@ class War(commands.Cog):
             return await ctx.send("I was expecting one or two numbers and that's not what I got. Care to try again?")
         # By this point, we should have a base_owner and a target_pos
         # Let's check to see if they are both valid
-        self.bot.logger.info(f"Base Owner: {base_owner['map_position']} - {war.team_size} - {target_pos}")
+        self.bot.logger.info(f"Base Owner: {base_owner['map_position']} calling {target_pos}")
         if base_owner['map_position'] > war.team_size or target_pos > war.team_size:
             return await ctx.send(f"There are only {war.team_size} players in this war.")
         if not self.is_elder(ctx.author):
@@ -347,19 +390,31 @@ class War(commands.Cog):
         if base_owner['attacks_left'] == 0:
             return await ctx.send(f"{base_display(base_owner)} has no more attacks left in this war.")
         for member in war.opponent.members:
-            if member.map_position == target_pos:
+            if war.type == "cwl":
+                map_position = self.get_map_position(war, member.map_position, True)
+            else:
+                map_position = member.map_position
+            if map_position == target_pos:
                 target = member  # for later use
+                target.map_position = self.get_map_position(war, member.map_position, True)
                 try:
                     if member.best_opponent_attack and member.best_opponent_attack.stars == 3:
                         return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
                 except AttributeError:
                     pass
+                break
         for call in self.calls:
             if call['target_pos'] == target_pos:
                 for member in war.opponent.members:
-                    if member.map_position == target_pos:
+                    if war.type == "cwl":
+                        map_position = self.get_map_position(war, member.map_position, True)
+                    else:
+                        map_position = member.map_position
+                    if map_position == target_pos:
+                        member.map_position = map_position
                         return await ctx.send(f"{base_display(base_owner)} has already called "
                                               f"{member_display(member)}.")
+                    break
         # Looks good, let's save it
         await self.add_call(war, base_owner['map_position'], target_pos)
         await ctx.send(f"{base_display(base_owner)} has called {member_display(target)}")
