@@ -155,8 +155,14 @@ class War(commands.Cog):
         self.calls_by_attacker = {}
         self.calls_by_target = {}
         for row in fetch:
-            attacker = war.get_member_by(map_position=row['caller_pos'], is_opponent=False)
-            defender = war.get_member_by(map_position=row['target_pos'], is_opponent=True)
+            if war.type == "cwl":
+                caller_pos = self.get_roster_position(war, row['caller_pos'], False)
+                target_pos = self.get_roster_position(war, row['target_pos'], True)
+                attacker = war.get_member_by(map_position=caller_pos, is_opponent=False)
+                defender = war.get_member_by(map_position=target_pos, is_opponent=True)
+            else:
+                attacker = war.get_member_by(map_position=row['caller_pos'], is_opponent=False)
+                defender = war.get_member_by(map_position=row['target_pos'], is_opponent=True)
             if defender:
                 defender_name = defender.name
                 defender_th = defender.town_hall
@@ -451,7 +457,12 @@ class War(commands.Cog):
         else:
             call = self.calls_by_target.get(target_pos)
             if not call:
-                target = war.get_member_by(map_position=target_pos, is_opponent=True)
+                if war.type == "cwl":
+                    roster_position = self.get_roster_position(war, target_pos, True)
+                    target = war.get_member_by(map_position=roster_position, is_opponent=True)
+                    target.map_position = target_pos
+                else:
+                    target = war.get_member_by(map_position=target_pos, is_opponent=True)
                 return await ctx.send(f"No active call to cancel on {member_display(target)}.")
         # cancel the call
         await self.cancel_call(call['call_id'])
@@ -489,11 +500,14 @@ class War(commands.Cog):
         if war.state not in ("preparation", "inWar"):
             return await ctx.send("No active war.")
         await self.init_calls(war)
-        print(self.calls_by_target)
         open_bases = ["Bases that are open"]
         targets = war.opponent.members.copy()
         targets.sort(key=lambda t: t.map_position)
+        counter = 1
         for target in targets:
+            if war.type == "cwl":
+                target.map_position = counter
+                counter += 1
             if target.best_opponent_attack:
                 if target.best_opponent_attack.stars == 3 or target.map_position in self.calls_by_target:
                     continue
@@ -748,7 +762,11 @@ class War(commands.Cog):
         response = "Our lineup:\n"
         member_list = war.clan.members
         member_list.sort(key=lambda m: m.map_position)
+        counter = 1
         for member in member_list:
+            if war.type == "cwl":
+                member.map_position = counter
+                counter += 1
             new_line = f"• {member_display(member)}"
             new_line += [" - done", " - 1 attack left", " - 2 attacks left"][2 - len(member.attacks)]
             # Does the member have any calls
@@ -777,7 +795,9 @@ class War(commands.Cog):
         if war.state not in ["preparation", "inWar"]:
             return await ctx.send("No active war")
         war_id = await self.get_war_id(war.preparation_start_time.time)
-        member = war.get_member_by(map_position=map_position, is_opponent=False)
+        if war.type == "cwl":
+            roster_position = self.get_roster_position(war, map_position, False)
+        member = war.get_member_by(map_position=roster_position, is_opponent=False)
         sql = ("UPDATE rcs_war_members SET opted_in = NOT opted_in WHERE war_id = $1 AND is_opponent = False AND "
                "map_position = $2 "
                "RETURNING opted_in")
