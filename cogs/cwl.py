@@ -58,7 +58,7 @@ class Cwl(commands.Cog):
         if ctx.invoked_subcommand is not None:
             return
 
-        if clan_name.lower() == "oak":
+        if "oak" in clan_name.lower():
             clan_tag = clans['Reddit Oak']
         else:
             clan_tag = clans['Reddit Quercus']
@@ -69,7 +69,6 @@ class Cwl(commands.Cog):
         embed = discord.Embed(title="CWL Status", color=discord.Color.dark_blue())
         group = await self.bot.coc.get_league_group(clan_tag)
         num_rounds = len(group.rounds) - 1  # API always includes the next round which we don't need
-        print(num_rounds)
         counter = 0
         content = ""
         while counter < num_rounds:
@@ -96,8 +95,8 @@ class Cwl(commands.Cog):
             counter += 1
         embed.add_field(name="Previous Rounds", value=content)
         blank = emojis['other']['gap']
-        th_list = (f"{emojis['th_icon'][13]} {emojis['th_icon'][12]} {emojis['th_icon'][11]} {emojis['th_icon'][10]} "
-                   f"{emojis['th_icon'][9]}")
+        # th_list = (f"{emojis['th_icon'][13]} {emojis['th_icon'][12]} {emojis['th_icon'][11]} {emojis['th_icon'][10]} "
+        #            f"{emojis['th_icon'][9]}")
         now = datetime.utcnow()
         if now < war.start_time.time:
             time_calc = f"Prep day. {to_time(war.start_time.seconds_until)} until war starts."
@@ -115,6 +114,30 @@ class Cwl(commands.Cog):
                         inline=True)
         embed.add_field(name=blank, value=blank, inline=True)
         await ctx.send(embed=embed)
+
+    @cwl.command(name="roster")
+    async def cwl_roster(self, ctx, clan_name: str = "oak"):
+        """Responds with the upcoming enemy's roster so that you can plan your roster.
+
+        **Example:**
+        /cwl roster"""
+        if "oak" in clan_name.lower():
+            clan_tag = clans['Reddit Oak']
+        else:
+            clan_tag = clans['Reddit Quercus']
+        group = await self.bot.coc.get_league_group(clan_tag)
+        round = group.rounds[-1]
+        for war_tag in round:
+            war = await self.bot.coc.get_league_war(war_tag)
+            if war.clan.tag == clan_tag:
+                new_breakdown = breakdown(war.opponent.members)
+                opponent_name = war.opponent.name
+                break
+            if war.opponent.tag == clan_tag:
+                new_breakdown = breakdown(war.clan.members)
+                opponent_name = war.clan.name
+                break
+        await ctx.send(f"**{opponent_name} Roster:**\n{new_breakdown}")
 
     @coc.WarEvents.members(clans['Reddit Oak'])
     async def on_roster_change(self, old_war, new_war):
