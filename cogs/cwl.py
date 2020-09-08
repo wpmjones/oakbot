@@ -62,57 +62,41 @@ class Cwl(commands.Cog):
             clan_tag = clans['Reddit Oak']
         else:
             clan_tag = clans['Reddit Quercus']
+        now = datetime.utcnow()
         war = await self.bot.coc.get_current_war(clan_tag)
         if not war.is_cwl:
             return await ctx.send(f"It appears that {war.clan} is not currently involved in CWL.  Please use "
                                   f"`/war` commands instead.")
         embed = discord.Embed(title="CWL Status", color=discord.Color.dark_blue())
-        group = await self.bot.coc.get_league_group(clan_tag)
-        num_rounds = len(group.rounds) - 1  # API always includes the next round which we don't need
-        counter = 0
-        content = ""
-        while counter < num_rounds:
-            async for cwl_war in group.get_wars(counter):
-                finished_status = ("won", "tied", "lost")
-                if cwl_war.clan.tag == "#CVCJR89" and cwl_war.status in finished_status:
-                    prefix = cwl_war.status.title()
-                    content += (f"{prefix} - {cwl_war.clan} ({cwl_war.clan.stars}) vs "
-                                f"{cwl_war.opponent} ({cwl_war.opponent.stars})\n")
-                    break
-                if cwl_war.opponent.tag == "#CVCJR89" and cwl_war.status in finished_status:
-                    statuses = {
-                        "won": "Lost",
-                        "winning": "Losing",
-                        "tie": "Tied",
-                        "tied": "Tied",
-                        "lost": "Won",
-                        "losing": "Winning",
-                    }
-                    prefix = statuses.get(cwl_war.status, "Unknown")
-                    content += (f"{prefix} - {cwl_war.opponent} ({cwl_war.opponent.stars}) vs "
-                                f"{cwl_war.clan} ({cwl_war.clan.stars})\n")
-                    break
-            counter += 1
-        embed.add_field(name="Previous Rounds", value=content)
         blank = emojis['other']['gap']
-        # th_list = (f"{emojis['th_icon'][13]} {emojis['th_icon'][12]} {emojis['th_icon'][11]} {emojis['th_icon'][10]} "
-        #            f"{emojis['th_icon'][9]}")
-        now = datetime.utcnow()
-        if now < war.start_time.time:
-            time_calc = f"Prep day. {to_time(war.start_time.seconds_until)} until war starts."
-        else:
-            time_calc = f"War ends in {to_time(war.end_time.seconds_until)}"
+        group = await self.bot.coc.get_league_group(clan_tag)
+        end_content = ""
+        async for war in group.get_wars_for_clan(clan_tag):
+            if war.state == "warEnded":
+                prefix = war.status.title()
+                end_content += (f"{prefix} - {war.clan} ({war.clan.stars}) vs "
+                                f"{war.opponent} ({war.opponent.stars})\n")
+            elif war.state == "inWar":
+                # check for prior content and add embed if needed
+                if end_content:
+                    embed.add_field(name="Previous Rounds", value=end_content, inline=False)
+                embed.add_field(name=f"{war.clan.name} vs {war.opponent.name}",
+                                value=f"War ends in {to_time(war.end_time.seconds_until)}.",
+                                inline=False)
+                embed.add_field(name=war.clan.name,
+                                value=f"{war.clan.stars} of {war.clan.max_stars} Stars\n"
+                                      f"{war.clan.destruction:.1f}% Destruction",
+                                inline=True)
+                embed.add_field(name=war.opponent.name,
+                                value=f"{war.opponent.stars} of {war.clan.max_stars} Stars\n"
+                                      f"{war.opponent.destruction:.1f}% Destruction",
+                                inline=True)
+                embed.add_field(name=blank, value=blank, inline=True)
+            elif war.state == "preparation":
+                embed.add_field(name=f"Next Round vs {war.opponent.name}",
+                                value=f"{breakdown(war.opponent.members)}\n"
+                                      f"{to_time(war.start_time.seconds_until)} until war starts.")
         embed.set_thumbnail(url="https://vignette.wikia.nocookie.net/clashofclans/images/9/97/LeagueMedal.png")
-        embed.add_field(name=f"{war.clan.name} vs {war.opponent.name}", value=time_calc, inline=False)
-        embed.add_field(name=war.clan.name,
-                        value=(f"{war.clan.stars} of {war.clan.max_stars} Stars\n"
-                               f"{war.clan.destruction:.1f}% Destruction"),
-                        inline=True)
-        embed.add_field(name=war.opponent.name,
-                        value=(f"{war.opponent.stars} of {war.opponent.max_stars} Stars\n"
-                               f"{war.opponent.destruction:.1f}% Destruction"),
-                        inline=True)
-        embed.add_field(name=blank, value=blank, inline=True)
         await ctx.send(embed=embed)
 
     @cwl.command(name="roster")
@@ -125,19 +109,8 @@ class Cwl(commands.Cog):
             clan_tag = clans['Reddit Oak']
         else:
             clan_tag = clans['Reddit Quercus']
-        group = await self.bot.coc.get_league_group(clan_tag)
-        round = group.rounds[-1]
-        for war_tag in round:
-            war = await self.bot.coc.get_league_war(war_tag)
-            if war.clan.tag == clan_tag:
-                new_breakdown = breakdown(war.opponent.members)
-                opponent_name = war.opponent.name
-                break
-            if war.opponent.tag == clan_tag:
-                new_breakdown = breakdown(war.clan.members)
-                opponent_name = war.clan.name
-                break
-        await ctx.send(f"**{opponent_name} Roster:**\n{new_breakdown}")
+        war = await self.bot.coc.get_current_war(clan_tag, cwl_round=coc.WarRound.current_preparation)
+        await ctx.send(f"**{war.opponent.name} Roster:**\n{breakdown(war.opponent.members)}")
 
     @coc.WarEvents.members(clans['Reddit Oak'])
     async def on_roster_change(self, old_war, new_war):
