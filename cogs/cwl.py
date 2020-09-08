@@ -117,16 +117,17 @@ class Cwl(commands.Cog):
         self.bot.logger.info("Roster change detected in CWL")
         member_list = []
         for member in new_war.opponent.members:
-            print(member_display(member))
+            member.map_position = new_war.members.index(member) + 1
             member_list.append(member_display(member))
         elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
         old_breakdown = breakdown(old_war.members)
         new_breakdown = breakdown(new_war.members)
-        content = (f"**CWL Roster Change**\n"
-                   f"Old Breakdown: {old_breakdown}\n"
-                   f"New Breakdown: {new_breakdown}")
-        await elder_channel.send(content)
-        await elder_channel.send("\n".join(member_list))
+        if old_breakdown != new_breakdown:
+            content = (f"**CWL Roster Change**\n"
+                       f"Old Breakdown: {old_breakdown}\n"
+                       f"New Breakdown: {new_breakdown}")
+            await elder_channel.send(content)
+            await elder_channel.send("\n".join(member_list))
 
 
 def setup(bot):
