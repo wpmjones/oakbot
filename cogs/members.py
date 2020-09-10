@@ -21,6 +21,9 @@ class MembersCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member):
         """Discord listener which is called when a user joins the Discord server."""
+        if member.guild.id != 251463913437134848:
+            # Don't monitor any server other than Oak
+            return
         channel = member.guild.get_channel(251463913437134848)
         content = (f"Welcome to Reddit Oak's Discord Server {member.mention}! We're happy to have you! Please "
                    "change your Discord nickname to match your in game name so that we know who you are.  If you have "
@@ -37,6 +40,9 @@ class MembersCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         """Discord listener which is called when a user leaves the Discord server."""
+        if member.guild.id != 251463913437134848:
+            # Don't monitor any server other than Oak
+            return
         # Build random list of messages
         msg_options = [" just left the server.  Buh Bye!", 
                        " just left our Discord. I wonder if we will miss them.",
