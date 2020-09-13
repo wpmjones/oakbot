@@ -361,7 +361,7 @@ class War(commands.Cog):
             caller_pos = int(args[0])
             target_pos = int(args[1])
             base_owner = await self.get_base_owner(war, map_position=caller_pos)
-            self.bot.logger.info(f"Single base: {base_display(base_owner)} calling {target_pos}")
+            self.bot.logger.info(f"Two arg call: {base_display(base_owner)} calling {target_pos}")
         elif len(args) == 1:
             # User provided only target base. Caller derived from Discord ID
             base_owner = await self.get_base_owner(war, discord_id=ctx.author.id)
@@ -378,28 +378,32 @@ class War(commands.Cog):
                                         additional_options=len(base_owner))
                 base_owner = base_owner[resp - 1]
             target_pos = int(args[0])
-            self.bot.logger.info(f"Multi base: {base_display(base_owner)} calling {target_pos}")
+            self.bot.logger.info(f"One arg call: {base_display(base_owner)} calling {target_pos}")
         else:
             return await ctx.send("I was expecting one or two numbers and that's not what I got. Care to try again?")
         # By this point, we should have a base_owner and a target_pos
         # Let's check to see if they are both valid
-        self.bot.logger.info(f"Base Owner: {base_owner['map_position']} calling {target_pos}")
         if base_owner['map_position'] > war.team_size or target_pos > war.team_size:
             return await ctx.send(f"There are only {war.team_size} players in this war.")
+        if base_owner['attacks_left'] == 0:
+            return await ctx.send(f"{base_display(base_owner)} has no more attacks left in this war.")
         if not self.is_elder(ctx.author):
             if base_owner['discord_id'] != ctx.author.id:
                 return await ctx.send(f"You are not allowed to call for {base_owner['name']} ({base_owner['tag']}.")
+            self.bot.logger.info("Checking for existing calls")
             for call in self.calls:
+                self.bot.logger.info(call)
                 if call['caller_pos'] == base_owner['map_position']:
+                    self.bot.logger.info(f"Existing call. Reserve: {call['reserve']}")
                     if not call['reserve']:
                         return await ctx.send(f"{base_display(base_owner)} already called {call['target']}.")
                     else:
                         # If member has a reserve, cancel the remove and continue
                         await self.cancel_call(call['call_id'])
-        if base_owner['attacks_left'] == 0:
-            return await ctx.send(f"{base_display(base_owner)} has no more attacks left in this war.")
+                    break
         for member in war.opponent.members:
             if war.type == "cwl":
+                # Necessary since the API returns your overall position in the full CWL roster, not actual map position
                 map_position = self.get_map_position(war, member.map_position, True)
             else:
                 map_position = member.map_position
@@ -433,13 +437,12 @@ class War(commands.Cog):
         """Cancel a call, based on the target, for the current war
 
         **Examples:**
-        /war cancel 3
+        /war cancel  (if you only have one base in the war)
+        /war cancel 3  (necessary if you have multiple bases in the war)
         """
         war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
         if war.state not in ["preparation", "inWar"]:
             return await ctx.send("No active war")
-        if target_pos > war.team_size:
-            return await ctx.send(f"There are only {war.team_size} players in this war.")
         await self.init_calls(war)
         if not target_pos:
             base_owner = await self.get_base_owner(war, discord_id=ctx.author.id)
@@ -458,8 +461,11 @@ class War(commands.Cog):
                 return await ctx.send("I can't find any calls for you! Maybe try `/war cancel #` where # is the map "
                                       "position of the base to be attacked.")
         else:
+            if target_pos > war.team_size:
+                return await ctx.send(f"There are only {war.team_size} players in this war.")
             call = self.calls_by_target.get(target_pos)
             if not call:
+                # figure out the correct target, then inform there is no call on that target
                 if war.type == "cwl":
                     roster_position = self.get_roster_position(war, target_pos, True)
                     target = war.get_member_by(map_position=roster_position, is_opponent=True)
