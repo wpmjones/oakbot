@@ -358,8 +358,11 @@ class War(commands.Cog):
         await self.init_calls(war)
         if len(args) == 2:
             # User provided calling base and target base
-            caller_pos = int(args[0])
-            target_pos = int(args[1])
+            try:
+                caller_pos = int(args[0])
+                target_pos = int(args[1])
+            except ValueError:
+                return await ctx.send("Please provide integers only for map position.")
             base_owner = await self.get_base_owner(war, map_position=caller_pos)
             self.bot.logger.info(f"Two arg call: {base_display(base_owner)} calling {target_pos}")
         elif len(args) == 1:
@@ -377,7 +380,10 @@ class War(commands.Cog):
                                         f"{player_list}",
                                         additional_options=len(base_owner))
                 base_owner = base_owner[resp - 1]
-            target_pos = int(args[0])
+            try:
+                target_pos = int(args[0])
+            except ValueError:
+                return await ctx.send("Please provide integers only for map position.")
             self.bot.logger.info(f"One arg call: {base_display(base_owner)} calling {target_pos}")
         else:
             return await ctx.send("I was expecting one or two numbers and that's not what I got. Care to try again?")
