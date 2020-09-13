@@ -212,11 +212,14 @@ class War(commands.Cog):
                     bases = []
                     for tag in api_response:
                         member = war.get_member(tag)
+                        if not member:
+                            # This tag is not in the current war (alts)
+                            continue
                         if war.type == "cwl":
                             map_position = self.get_map_position(war, member.map_position, False)
                         else:
                             map_position = member.map_position
-                        if member and len(member.attacks) < 2:
+                        if len(member.attacks) < 2:
                             base['tag'] = member.tag
                             base['name'] = member.name
                             base['map_position'] = map_position
