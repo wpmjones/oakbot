@@ -663,7 +663,7 @@ class War(commands.Cog):
         if not player:
             return await ctx.send("Please provide a valid in-game name or player tag.")
         if not member:
-            return await ctx.send("Please provide a valid Disord ID or tag and ensure that this person is a "
+            return await ctx.send("Please provide a valid Discord ID or tag and ensure that this person is a "
                                   "member of the Reddit Oak Discord server.")
         # Add Discord ID to Oak Table
         url = f"{settings['google']['oak_table']}?call=add_discord&tag={player.tag[1:]}&discord_id={member.id}"
