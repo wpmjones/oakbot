@@ -6,9 +6,7 @@ import re
 from discord.ext import commands
 from cogs.utils.constants import clans
 from cogs.utils.converters import PlayerConverter
-from cogs.utils.db import get_link_token, get_player_tag, get_discord_id, get_discord_batch
 from datetime import datetime, timedelta
-from urllib.parse import quote as urlencode
 from config import settings, emojis
 
 
@@ -191,7 +189,7 @@ class War(commands.Cog):
         """
         if "discord_id" in kwargs.keys():
             base = {'discord_id': kwargs.get('discord_id')}
-            api_response = get_player_tag(base['discord_id'])
+            api_response = await self.bot.links.get_linked_players(base['discord_id'])
             if api_response:
                 if len(api_response) == 1:
                     base['player_tag'] = api_response[0]
@@ -235,8 +233,7 @@ class War(commands.Cog):
                         # multiple accounts with attacks left in this war or no accounts left (dealt with in war_call)
                         return bases
             else:
-                # TODO change to elder channel or member status before going live
-                channel = self.bot.get_channel(settings['oak_channels']['test_chat'])
+                channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
                 await channel.send(f"{kwargs.get('discord_id')} is missing from the links database. "
                                    f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
                 raise ValueError(f"{kwargs.get('discord_id')} is missing from the links database. "
@@ -250,7 +247,7 @@ class War(commands.Cog):
             if member:
                 base = {'tag': member.tag,
                         'name': member.name,
-                        'discord_id': get_discord_id(member.tag),
+                        'discord_id': await self.bot.links.get_discord_link(member.tag),
                         'map_position': map_position,
                         'town_hall': member.town_hall,
                         'attacks_left': 2 - len(member.attacks)
@@ -264,7 +261,7 @@ class War(commands.Cog):
             member = war.get_member_by(map_position=roster_position, is_opponent=False)
             base['name'] = member.name
             base['tag'] = member.tag
-            base['discord_id'] = get_discord_id(member.tag)
+            base['discord_id'] = await self.bot.links.get_discord_link(member.tag)
             base['town_hall'] = member.town_hall
             base['attacks_left'] = 2 - len(member.attacks)
             return base
@@ -608,21 +605,6 @@ class War(commands.Cog):
         await self.bot.pool.execute(sql, call['call_id'])
         await ctx.send(f"Reserve removed for {base_display(base_owner)}.")
 
-    @war.command(name="update", hidden=True)
-    async def war_update(self, ctx, player: PlayerConverter = None, member: discord.User = None):
-        """Update record in Discord links"""
-        token = get_link_token()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        url = "https://api.amazingspinach.com/links"
-        payload = {"playerTag": player.tag, "discordId": str(member.id)}
-        async with self.bot.session.put(url, json=payload, headers=headers) as r:
-            if r.status >= 300:
-                return await ctx.send(f"Error: {r.status} when adding for {player.name} ({player.tag}). "
-                                      f"Please make sure they are properly linked.")
-            else:
-                resp = await r.text()
-        await ctx.send(f"{resp}\n{player.name} ({player.tag}) has been successfully linked to {member.display_name}.")
-
     @war.command(name="check", hidden=True)
     async def war_check(self, ctx, tag_or_id):
         """Check links API to see who they match"""
@@ -630,19 +612,17 @@ class War(commands.Cog):
             return await ctx.send("You are not authorized to use this command.")
         async with ctx.typing():
             # Check Links API
-            token = get_link_token()
-            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-            url = f"https://api.amazingspinach.com/links/{urlencode(tag_or_id)}"
-            async with self.bot.session.get(url, headers=headers) as r:
-                if r.status >= 300:
-                    links_resp = f"Error: {r.status} when checking on {tag_or_id}."
-                else:
-                    resp = await r.json()
-                    links_resp = "**Discord Links API:**\n"
-                    tag_list = []
-                    for row in resp:
-                        links_resp += f"Player Tag {row['playerTag']} is linked to <@{row['discordId']}>.\n"
-                        tag_list.append(row['playerTag'])
+            links_resp = "**Discord Links API:**\n"
+            if tag_or_id.startswith("#"):
+                tag_list = [tag_or_id, ]
+                discord_id = await self.bot.links.get_discord_link(tag_or_id)
+                links_resp += f"Player Tag {tag_or_id} is linked to <@{discord_id}>."
+            else:
+                tag_list = []
+                player_tags = await self.bot.links.get_linked_players(tag_or_id)
+                for tag in player_tags:
+                    links_resp += f"Player Tag {tag} is linked to <@{tag_or_id}>.\n"
+                    tag_list.append(tag)
             # Check Oak Table
             gc = gspread.oauth()
             ot = gc.open("Oak Table")
@@ -650,9 +630,12 @@ class War(commands.Cog):
             oak_resp = "**Oak Table Links:**\n"
             for tag in tag_list:
                 player = await self.bot.coc.get_player(tag)
-                name_cell = sh.find(player.name)
-                discord_id = sh.cell(name_cell.row, 9).value
-                oak_resp += f"{player.name} ({player.tag}) is linked to <@{discord_id}> in the Oak Table.\n"
+                try:
+                    name_cell = sh.find(player.name)
+                    discord_id = sh.cell(name_cell.row, 9).value
+                    oak_resp += f"{player.name} ({player.tag}) is linked to <@{discord_id}> in the Oak Table.\n"
+                except gspread.CellNotFound:
+                    oak_resp += f"{player.name} ({player.tag}) not found in Oak Table."
             await ctx.send(f"{links_resp}\n{oak_resp}")
 
     @war.command(name="add", hidden=True)
@@ -674,17 +657,9 @@ class War(commands.Cog):
             else:
                 await ctx.send("Successfully updated Oak Table.")
         # Add link to Discord Links API
-        token = get_link_token()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        url = "https://api.amazingspinach.com/links"
-        payload = {"playerTag": player.tag, "discordId": str(member.id)}
-        async with self.bot.session.post(url, json=payload, headers=headers) as r:
-            if r.status >= 300:
-                return await ctx.send(f"Error: {r.status} when adding for {player.name} ({player.tag}) to Links API. "
-                                      f"Please make sure they are properly linked.")
-            else:
-                resp = await r.text()
-        await ctx.send(f"{resp}\n{player.name} ({player.tag}) has been successfully linked to {member.display_name}.")
+        result = await self.bot.links.add_link(player.tag, member.id)
+        self.bot.logger.info(f"{type(result)}: {result}")
+        await ctx.send(f"{player.name} ({player.tag}) has been successfully linked to {member.display_name}.")
 
     @war.command(name="status", aliases=["info"])
     async def war_status(self, ctx):
@@ -831,22 +806,34 @@ class War(commands.Cog):
             clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
             yes_ids = ["**Players with associated Discord users**"]
             no_ids = ["**Players without Discord users**"]
-            free = ["**Discord users without associated players**"]
+            free_yes = ["**Linked Discord users not in clan**"]
+            free_no = ["**Discord users without associated players**"]
             valid_ids = []
-            data = get_discord_batch([member.tag for member in clan.members])
             for member in clan.members:
-                discord_id = data.get(member.tag, None)
+                discord_id = await self.bot.links.get_discord_link(member.tag)
                 if discord_id:
                     yes_ids.append(f"• {member.name} ({member.tag}) is <@{discord_id}> ({discord_id})")
-                    valid_ids.append(int(discord_id))
+                    valid_ids.append(discord_id)
                 else:
                     no_ids.append(f"• {member.name} ({member.tag})")
+            await ctx.send_text(ctx.channel, "\n".join(yes_ids))
+            await ctx.send_text(ctx.channel, "\n".join(no_ids))
             guild = self.bot.get_guild(settings['discord']['oakguild_id'])
             for member in guild.members:
-                if not member.bot and member.id not in valid_ids:
-                    free.append(f"• <@{member.id}> ({member.id})")
-            response = yes_ids + no_ids + free
-            await ctx.send_text(ctx.channel, "\n".join(response))
+                if member.bot:
+                    continue
+                players = ""
+                if member.id not in valid_ids:
+                    tags = await self.bot.links.get_linked_players(member.id)
+                    for tag in tags:
+                        player = await self.bot.coc.get_player(tag)
+                        players += f"\n       {player.name} ({player.tag})"
+                    if players:
+                        free_yes.append(f"• <@{member.id}> ({member.id}){players}")
+                    else:
+                        free_no.append(f"• <@{member.id}> ({member.id})")
+            await ctx.send_text(ctx.channel, "\n".join(free_yes))
+            await ctx.send_text(ctx.channel, "\n".join(free_no))
 
     @war.command(name="help")
     async def war_help(self, ctx):

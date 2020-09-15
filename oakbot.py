@@ -6,6 +6,7 @@ import aiohttp
 import discord
 
 from discord.ext import commands
+from coc.ext import discordlinks
 from cogs.utils import context
 from cogs.utils.db import Psql
 from datetime import datetime
@@ -59,6 +60,9 @@ coc_client = coc.login(coc_email,
                        key_count=2,
                        correct_tags=True)
 
+links_client = discordlinks.login(settings['links']['user'],
+                                  settings['links']['pass'])
+
 
 class OakBot(commands.Bot):
     def __init__(self):
@@ -68,6 +72,7 @@ class OakBot(commands.Bot):
         self.remove_command("help")
         coc_client.bot = self
         self.coc = coc_client
+        self.links = links_client
         self.color = discord.Color.green()
         self.logger = logger
         self.session = aiohttp.ClientSession(loop=self.loop)
