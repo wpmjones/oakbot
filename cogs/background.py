@@ -2,10 +2,10 @@ import gspread
 import json
 import pyodbc
 import requests
+import sys
 
 from discord.ext import commands, tasks
 from cogs.utils.constants import clans
-from cogs.utils.db import get_discord_id, Sql
 from datetime import datetime
 from config import settings
 
@@ -104,7 +104,7 @@ class Background(commands.Cog):
         not_in_links = []
         for member in clan.members:
             try:
-                discord_id = get_discord_id(member.tag)
+                discord_id = self.bot.links.get_discord_link(member.tag)
                 if not discord_id:
                     not_in_links.append(f"{member.name} ({member.tag})")
                     continue
@@ -135,22 +135,28 @@ class Background(commands.Cog):
         not_in_links = []
         for member in clan.members:
             try:
-                discord_id = get_discord_id(member.tag)
+                discord_id = self.bot.links.get_discord_link(member.tag)
                 if not discord_id:
                     gc = gspread.oauth()
                     ot = gc.open("Oak Table")
                     sh = ot.worksheet("Current Members")
                     name_cell = sh.find(member.name)
-                    if 0 < name_cell.row < 55:
+                    if name_cell.row > 55:
                         self.bot.logger.debug(f"Skipping {member.name} ({member.tag}) since it appears they are new.")
                         not_in_links.append(f"{member.name} ({member.tag})")
-                    continue
+                        continue
+                    discord_id = sh.cell(name_cell.row, 9).value
+                    if not discord_id:
+                        # ID missing from Oak Table
+                        continue
                 discord_member = self.guild.get_member(discord_id)
                 if quercus_role in discord_member.roles:
                     await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
                                                                     "in Oak. You're welcome!")
             except ValueError:
-                self.bot.logger.info(f"Value error dealing with {member.name} ({member.tag})")
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                line_num = exc_tb.tb_lineno
+                self.bot.logger.info(f"check_oak: {line_num}: Value error dealing with {member.name} ({member.tag})")
         if not_in_links:
             channel = self.guild.get_channel(settings['oak_channels']['member_status_chat'])
             new_line = "\n"
