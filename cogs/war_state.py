@@ -3,7 +3,6 @@ import discord
 import asyncio
 
 from discord.ext import commands
-from cogs.utils.db import get_discord_id
 from cogs.utils.constants import clans
 from cogs.war import member_display
 from config import settings
@@ -40,7 +39,7 @@ class WarSetup(commands.Cog):
             for member in war.members:
                 if member.is_opponent:
                     continue
-                discord_id = get_discord_id(member.tag)
+                discord_id = await self.bot.links.get_discord_links(member.tag)
                 user = self.guild.get_member(discord_id)
                 await user.add_roles(war_role, reason="Auto add role for war.")
                 names.append(user.display_name)

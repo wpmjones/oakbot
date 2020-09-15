@@ -1,7 +1,7 @@
 import discord
 
 from discord.ext import commands
-from cogs.utils.db import get_discord_id, get_player_tag, Sql
+from cogs.utils.db import Sql
 from cogs.utils.constants import leagues_to_emoji
 from cogs.utils.converters import PlayerConverter
 from config import settings, emojis, color_pick
@@ -213,11 +213,18 @@ class General(commands.Cog):
     @commands.command(name="siege", aliases=["sm"])
     async def siege_request(self, ctx, *, siege_req: str = "help"):
         """- For requesting siege machines
+
         Options:
          - ww, wall wrecker
          - air1, blimp, battle blimp, bb
          - air2, stone, slam, slammer, stone slammer
          - barracks, sb
+
+         **Example:**
+         /siege wall wrecker
+         /siege blimp
+         /siege Stone Slammer
+         /siege barracks
          """
         user_id = ctx.author.id
         if siege_req == "help":
@@ -254,7 +261,7 @@ class General(commands.Cog):
         requestor = None
         # get requestor player tag from Discord ID
         clan = await self.bot.coc.get_clan("#CVCJR89")
-        requestor_tag = get_player_tag(user_id)
+        requestor_tag = await self.bot.links.get_linked_players(user_id)
         # Remove any links for player tags that aren't currently in Oak
         if len(requestor_tag) > 1:
             clan_tags = [x.tag for x in clan.members]
@@ -268,13 +275,12 @@ class General(commands.Cog):
             for tag in requestor_tag:
                 player = await self.bot.coc.get_player(tag)
                 prompt_text += f"\n{counter}. {player.name} ({player.tag})"
-
             prompt = ctx.prompt(prompt_text, additional_options=len(requestor_tag))
-            requestor_tag = requestor_tag[prompt]
+            requestor_tag = requestor_tag[prompt - 1]
         # find oak players with the requested siege machine
-        async for player in clan.get_detailed_members(cache=True):
-            if siege_name in player.home_troops_dict.keys():
-                discord_id = get_discord_id(player.tag)
+        async for player in clan.get_detailed_members():
+            if siege_name in [troop.name for troop in player.siege_machines]:
+                discord_id = await self.bot.links.get_discord_links(player.tag)
                 donors.append(f"{player.name}: <@{discord_id}>")
             if requestor_tag == player.tag:
                 requestor = player.name
@@ -284,7 +290,7 @@ class General(commands.Cog):
         embed = discord.Embed(title=f"{siege_name} Request",
                               description=f"{requestor} has requested a {siege_name}",
                               color=0xb5000)
-        embed.set_footer(icon_url=thumb, text="Remember to select your seige machine when you attack!")
+        embed.set_footer(icon_url=thumb, text="Remember to select your siege machine when you attack!")
         content = "**Potential donors include:**\n"
         content += "\n".join(donors)
         await ctx.send(embed=embed)

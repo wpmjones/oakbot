@@ -3,7 +3,7 @@ import asyncio
 import season
 
 from discord.ext import commands
-from cogs.utils.db import Sql, get_discord_id
+from cogs.utils.db import Sql
 from cogs.utils.checks import is_elder
 from cogs.utils.constants import clans
 from datetime import datetime, timedelta
@@ -182,9 +182,6 @@ class Elder(commands.Cog):
         /warn remove #
         """
         conn = self.bot.pool
-        white = (245, 245, 245)
-        dark_white = (215, 215, 215)
-        red = (225, 15, 15)
         if authorized(ctx.author.roles) or ctx.author.id == 251150854571163648:
             if player is None:
                 sql = ("SELECT COUNT(strike_num) AS num_warnings, player_name "
@@ -266,7 +263,8 @@ class Elder(commands.Cog):
                        "FROM oak_warn_list WHERE player_name = $1 "
                        "ORDER BY strike_num")
                 strikes = await conn.fetch(sql, member.name)
-                user = ctx.guild.get_member(get_discord_id(member.tag))
+                discord_id = await self.bot.links.get_discord_link(member.tag)
+                user = ctx.guild.get_member(discord_id)
                 header = f"**Warnings for {member.name}**"
                 content = ""
                 for strike in strikes:
