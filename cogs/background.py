@@ -104,7 +104,7 @@ class Background(commands.Cog):
         not_in_links = []
         for member in clan.members:
             try:
-                discord_id = self.bot.links.get_discord_link(member.tag)
+                discord_id = await self.bot.links.get_discord_link(member.tag)
                 if not discord_id:
                     not_in_links.append(f"{member.name} ({member.tag})")
                     continue
