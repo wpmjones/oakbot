@@ -114,6 +114,8 @@ class Cwl(commands.Cog):
 
     @coc.WarEvents.members(clans['Reddit Oak'])
     async def on_roster_change(self, old_war, new_war):
+        if new_war.type != "cwl":
+            return
         self.bot.logger.info("Roster change detected in CWL")
         member_list = []
         for member in new_war.opponent.members:
