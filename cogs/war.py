@@ -396,6 +396,10 @@ class War(commands.Cog):
             self.bot.logger.info("Checking for existing calls")
             for call in self.calls:
                 self.bot.logger.info(call)
+                if call['target_pos'] == target_pos:
+                    self.bot.logger.info(f"Target ({target_pos} already called by {call['caller_pos']}.")
+                    return await ctx.send(f"**ERROR:** {call_display(call, 'opponent')} "
+                                          f"is already called by {call_display(call, 'clan')}")
                 if call['caller_pos'] == base_owner['map_position']:
                     self.bot.logger.info(f"Existing call. Reserve: {call['reserve']}")
                     if not call['reserve']:
