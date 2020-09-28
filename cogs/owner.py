@@ -47,7 +47,7 @@ class OwnerCog(commands.Cog):
         /links get discord_id"""
         if tag_or_id.startswith("#"):
             # player_tag provided
-            discord_id = await self.bot.links.get_discord_link(tag_or_id)
+            discord_id = await self.bot.links.get_link(tag_or_id)
             return await ctx.send(f"{tag_or_id} linked to {discord_id}.")
         else:
             # assume we have a discord_id
