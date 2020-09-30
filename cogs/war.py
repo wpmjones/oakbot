@@ -247,7 +247,7 @@ class War(commands.Cog):
             if member:
                 base = {'tag': member.tag,
                         'name': member.name,
-                        'discord_id': await self.bot.links.get_discord_link(member.tag),
+                        'discord_id': await self.bot.links.get_link(member.tag),
                         'map_position': map_position,
                         'town_hall': member.town_hall,
                         'attacks_left': 2 - len(member.attacks)
@@ -261,7 +261,7 @@ class War(commands.Cog):
             member = war.get_member_by(map_position=roster_position, is_opponent=False)
             base['name'] = member.name
             base['tag'] = member.tag
-            base['discord_id'] = await self.bot.links.get_discord_link(member.tag)
+            base['discord_id'] = await self.bot.links.get_link(member.tag)
             base['town_hall'] = member.town_hall
             base['attacks_left'] = 2 - len(member.attacks)
             return base
@@ -393,21 +393,21 @@ class War(commands.Cog):
         if not self.is_elder(ctx.author):
             if base_owner['discord_id'] != ctx.author.id:
                 return await ctx.send(f"You are not allowed to call for {base_owner['name']} ({base_owner['tag']}.")
-            self.bot.logger.info("Checking for existing calls")
-            for call in self.calls:
-                self.bot.logger.info(call)
-                if call['target_pos'] == target_pos:
-                    self.bot.logger.info(f"Target ({target_pos} already called by {call['caller_pos']}.")
-                    return await ctx.send(f"**ERROR:** {call_display(call, 'opponent')} "
-                                          f"is already called by {call_display(call, 'clan')}")
-                if call['caller_pos'] == base_owner['map_position']:
-                    self.bot.logger.info(f"Existing call. Reserve: {call['reserve']}")
-                    if not call['reserve']:
-                        return await ctx.send(f"{base_display(base_owner)} already called {call['target']}.")
-                    else:
-                        # If member has a reserve, cancel the remove and continue
-                        await self.cancel_call(call['call_id'])
-                    break
+        self.bot.logger.info("Checking for existing calls")
+        for call in self.calls:
+            self.bot.logger.info(call)
+            if call['target_pos'] == target_pos:
+                self.bot.logger.info(f"Target ({target_pos} already called by {call['caller_pos']}.")
+                return await ctx.send(f"**ERROR:** {call_display(call, 'opponent')} "
+                                      f"is already called by {call_display(call, 'clan')}")
+            if call['caller_pos'] == base_owner['map_position']:
+                self.bot.logger.info(f"Existing call. Reserve: {call['reserve']}")
+                if not call['reserve']:
+                    return await ctx.send(f"**ERROR:** {base_display(base_owner)} already called {call['target']}.")
+                else:
+                    # If member has a reserve, cancel the remove and continue
+                    await self.cancel_call(call['call_id'])
+                break
         for member in war.opponent.members:
             if war.type == "cwl":
                 # Necessary since the API returns your overall position in the full CWL roster, not actual map position
@@ -419,7 +419,7 @@ class War(commands.Cog):
                 target.map_position = self.get_map_position(war, member.map_position, True)
                 try:
                     if member.best_opponent_attack and member.best_opponent_attack.stars == 3:
-                        return await ctx.send(f"{target_pos}. {member.name} is already 3 starred.")
+                        return await ctx.send(f"{member_display(target)} is already 3 starred.")
                 except AttributeError:
                     pass
                 break
@@ -619,7 +619,7 @@ class War(commands.Cog):
             links_resp = "**Discord Links API:**\n"
             if tag_or_id.startswith("#"):
                 tag_list = [tag_or_id, ]
-                discord_id = await self.bot.links.get_discord_link(tag_or_id)
+                discord_id = await self.bot.links.get_link(tag_or_id)
                 links_resp += f"Player Tag {tag_or_id} is linked to <@{discord_id}>."
             else:
                 tag_list = []
@@ -814,7 +814,7 @@ class War(commands.Cog):
             free_no = ["**Discord users without associated players**"]
             valid_ids = []
             for member in clan.members:
-                discord_id = await self.bot.links.get_discord_link(member.tag)
+                discord_id = await self.bot.links.get_link(member.tag)
                 if discord_id:
                     yes_ids.append(f"• {member.name} ({member.tag}) is <@{discord_id}> ({discord_id})")
                     valid_ids.append(discord_id)
@@ -911,10 +911,12 @@ class War(commands.Cog):
         Mark call completed
         Report to Discord
         """
-        # TODO set up fresh attacks/new stars
+        # TODO SELECT FROM oak_calls WHERE map_positions match and attack isn't complete, LIMIT 1
+        # This covers expired calls but could leave multiples
+        # Remove limit and mark all matching map_positions complete???? I think yes.
         await self.init_calls(war)
         call = self.calls_by_attacker.get(attack.attacker.map_position)
-        if call:
+        if call and call['target_pos'] == attack.defender.map_position:
             await self.complete_call(call['call_id'])
         war_channel = self.bot.get_channel(settings['oak_channels']['oak_war'])
         empty = 3 - attack.stars
