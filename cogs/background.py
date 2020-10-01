@@ -56,6 +56,7 @@ class Background(commands.Cog):
         self.bot.logger.info("Starting member loop for SQL")
         to_google = []
         async for m in clan.get_detailed_members():
+            print(m.name)
             clan_games = m.get_achievement("Games Champion").value if m.get_achievement("Games Champion") else 0
             barb_king = m.get_hero("Barbarian King").level if m.get_hero("Barbarian King") else 0
             arch_queen = m.get_hero("Archer Queen").level if m.get_hero("Archer Queen") else 0
