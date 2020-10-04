@@ -125,7 +125,7 @@ class Cwl(commands.Cog):
         old_breakdown = breakdown(old_war.members)
         new_breakdown = breakdown(new_war.members)
         if old_breakdown != new_breakdown:
-            content = (f"**CWL Roster Change**\n"
+            content = (f"**CWL Roster Change for {new_war.opponent.name}**\n"
                        f"Old Breakdown: {old_breakdown}\n"
                        f"New Breakdown: {new_breakdown}")
             await elder_channel.send(content)
