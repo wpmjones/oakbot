@@ -149,14 +149,15 @@ class Elder(commands.Cog):
                     if r.status != 200:
                         await ctx.send("Please check the Oak Table. Removal was not successful.")
                 content = f"{player} (#{player_tag}) has been moved to old members."
-                guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
-                is_user, user = is_discord_user(guild, int(discord_id))
-                if is_user and ban == 0:
-                    await user.remove_roles(guild.get_role(settings['oak_roles']['member']), reason=reason)
-                    content += " Member role has been removed."
-                if is_user and ban == 1:
-                    await user.kick(reason=reason)
-                    content += f" {user.mention} kicked from server. If Discord ban is necessary, now is the time!"
+                if discord_id:
+                    guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
+                    is_user, user = is_discord_user(guild, int(discord_id))
+                    if is_user and ban:
+                        await user.remove_roles(guild.get_role(settings['oak_roles']['member']), reason=reason)
+                        content += " Member role has been removed."
+                    if is_user and ban:
+                        await user.kick(reason=reason)
+                        content += f" {user.mention} kicked from server. If Discord ban is necessary, now is the time!"
                 self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                      f"{player} {ctx.command}ed for {reason}")
                 await ctx.send(content)
