@@ -264,7 +264,7 @@ class Elder(commands.Cog):
                        "FROM oak_warn_list WHERE player_name = $1 "
                        "ORDER BY strike_num")
                 strikes = await conn.fetch(sql, member.name)
-                discord_id = await self.bot.links.get_discord_link(member.tag)
+                discord_id = await self.bot.links.get_link(member.tag)
                 user = ctx.guild.get_member(discord_id)
                 header = f"**Warnings for {member.name}**"
                 content = ""
