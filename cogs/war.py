@@ -694,7 +694,12 @@ class War(commands.Cog):
         elif now < self.phase3(war.end_time.time).time:
             time_calc = f"{to_time(self.phase3(war.end_time.time).seconds_until)} left in Phase 2!"
         else:
-            if war.end_time.seconds_until > 0:
+            if war.state == "warEnded":
+                time_calc = {"won": "We are victorious!",
+                             "lost": "We lost.",
+                             "tie": "We tied! We actually tied!"
+                             }[war.status]
+            elif war.end_time.seconds_until > 0:
                 time_calc = f"Free for all! War ends in {to_time(war.end_time.seconds_until)}"
             else:
                 # Maybe maintenance pushed the end of war back some

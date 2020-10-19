@@ -32,6 +32,7 @@ class WarSetup(commands.Cog):
         war_role = self.guild.get_role(settings['oak_roles']['inwar'])
         if not self.elder_channel:
             self.elder_channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
+        self.bot.logger.info(f"War role name is: {war_role.name}. So far, so good.")
         if new_war.state == "preparation":
             await test_chat.send(f"{new_war.clan.name} is in preparation")
             names = []
