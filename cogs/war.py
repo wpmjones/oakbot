@@ -234,8 +234,8 @@ class War(commands.Cog):
                         return bases
             else:
                 channel = self.bot.get_channel(settings['oak_channels']['elder_chat'])
-                await channel.send(f"{kwargs.get('discord_id')} is missing from the links database. "
-                                   f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
+                await channel.send(f"<@{kwargs.get('discord_id')}> ({kwargs.get('discord_id')}) is missing from the "
+                                   f"links database. Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
                 raise ValueError(f"{kwargs.get('discord_id')} is missing from the links database. "
                                  f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
         elif "player_tag" in kwargs.keys():
