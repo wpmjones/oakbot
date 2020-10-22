@@ -340,6 +340,13 @@ class War(commands.Cog):
         else:
             await ctx.invoke(self.war_call, pre, post)
 
+    @war.command(name="test", hidden=True)
+    async def war_test(self, ctx):
+        war = await self.bot.coc.get_current_war(clans['Reddit Oak'])
+        await self.init_calls(war)
+        for call in self.calls:
+            print(call)
+
     @war.command(name="call", aliases=["c"])
     async def war_call(self, ctx, *args):
         """Call a target for the current war
@@ -397,13 +404,14 @@ class War(commands.Cog):
         for call in self.calls:
             self.bot.logger.info(call)
             if call['target_pos'] == target_pos:
-                self.bot.logger.info(f"Target ({target_pos} already called by {call['caller_pos']}.")
+                self.bot.logger.info(f"Target ({target_pos} already called by {call_display(call, 'clan')}.")
                 return await ctx.send(f"**ERROR:** {call_display(call, 'opponent')} "
                                       f"is already called by {call_display(call, 'clan')}")
             if call['caller_pos'] == base_owner['map_position']:
                 self.bot.logger.info(f"Existing call. Reserve: {call['reserve']}")
                 if not call['reserve']:
-                    return await ctx.send(f"**ERROR:** {base_display(base_owner)} already called {call['target']}.")
+                    return await ctx.send(f"**ERROR:** {base_display(base_owner)} already called "
+                                          f"{call_display(call, 'opponent')}.")
                 else:
                     # If member has a reserve, cancel the remove and continue
                     await self.cancel_call(call['call_id'])
