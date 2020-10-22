@@ -927,6 +927,8 @@ class War(commands.Cog):
         # TODO SELECT FROM oak_calls WHERE map_positions match and attack isn't complete, LIMIT 1
         # This covers expired calls but could leave multiples
         # Remove limit and mark all matching map_positions complete???? I think yes.
+        self.bot.logger.info(f"New attack event: {attack.attacker.map_position} attacking "
+                             f"{attack.defender.map_position}.")
         await self.init_calls(war)
         call = self.calls_by_attacker.get(attack.attacker.map_position)
         if call and call['target_pos'] == attack.defender.map_position:
