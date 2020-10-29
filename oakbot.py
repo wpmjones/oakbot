@@ -19,7 +19,7 @@ initial_extensions = ["cogs.general",
                       "cogs.elder",
                       "cogs.owner",
                       "cogs.admin",
-                      "cogs.war"
+                      "cogs.war",
                       ]
 
 if enviro == "LIVE":
@@ -63,12 +63,16 @@ coc_client = coc.login(coc_email,
 links_client = discordlinks.login(settings['links']['user'],
                                   settings['links']['pass'])
 
+intents = discord.Intents.default()
+intents.members = True
+
 
 class OakBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix=prefix,
                          description=description,
-                         case_insensitive=True)
+                         case_insensitive=True,
+                         intents=intents)
         self.remove_command("help")
         coc_client.bot = self
         self.coc = coc_client
