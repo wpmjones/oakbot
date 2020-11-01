@@ -1,11 +1,11 @@
 import gspread
 import json
-import pyodbc
 import requests
 import sys
 
 from discord.ext import commands, tasks
 from cogs.utils.constants import clans
+from cogs.utils.db import Sql
 from datetime import datetime
 from config import settings
 
@@ -33,63 +33,53 @@ class Background(commands.Cog):
     @tasks.loop(hours=1.0)
     async def oak_data_push(self):
         """Update SQL database with latest info from API"""
-        # Class for items with a level of 0
-        class NullItem:
-            level = 0
-            value = 0
-
         now = datetime.utcnow()
-        driver = "ODBC Driver 17 for SQL Server"
-        conn = pyodbc.connect(f"DRIVER={driver};SERVER={settings['database']['server']};"
-                              f"DATABASE={settings['database']['database']};UID={settings['database']['username']};"
-                              f"PWD={settings['database']['password']}")
-        cursor = conn.cursor()
-        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
-        sql1 = ("INSERT INTO coc_oak (tag, playerName, XPLevel, trophies, donations, donReceived, league, "
-                "leagueIcon, thLevel, warStars, attackWins, defenseWins, bestTrophies, vsTrophies, bestVsTrophies, "
-                "versusBattleWins, builderHall, timestamp) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
-        sql2 = ("UPDATE coc_oak "
-                "SET barbKing = ?, archQueen = ?, grandWarden = ?, royalChamp = ?, battleMachine = ?, "
-                "clanGames = ?, wallWrecker = ?, battleBlimp = ?, stoneSlammer = ?, siegeBarracks = ? "
-                "WHERE tag = ? AND timestamp = ?")
-        self.bot.logger.info("Starting member loop for SQL")
-        to_google = []
-        async for m in clan.get_detailed_members():
-            print(m.name)
-            clan_games = m.get_achievement("Games Champion").value if m.get_achievement("Games Champion") else 0
-            barb_king = m.get_hero("Barbarian King").level if m.get_hero("Barbarian King") else 0
-            arch_queen = m.get_hero("Archer Queen").level if m.get_hero("Archer Queen") else 0
-            grand_warden = m.get_hero("Grand Warden").level if m.get_hero("Grand Warden") else 0
-            royal_champ = m.get_hero("Royal Champion").level if m.get_hero("Royal Champion") else 0
-            battle_mach = m.get_hero("Battle Machine").level if m.get_hero("Battle Machine") else 0
-            wall_wrecker = m.siege_machines[0].level if len(m.siege_machines) > 0 else 0
-            battle_blimp = m.siege_machines[1].level if len(m.siege_machines) > 1 else 0
-            stone_slammer = m.siege_machines[2].level if len(m.siege_machines) > 2 else 0
-            barracks = m.siege_machines[3].level if len(m.siege_machines) > 3 else 0
-            cursor.execute(sql1, m.tag[1:], m.name, m.exp_level, m.trophies, m.donations, m.received,
-                           m.league.name, m.league.icon.url, m.town_hall, m.war_stars, m.attack_wins,
-                           m.defense_wins, m.best_trophies, m.versus_trophies, m.best_versus_trophies,
-                           m.versus_attack_wins, m.builder_hall, now)
-            conn.commit()
-            cursor.execute(sql2, barb_king, arch_queen, grand_warden, royal_champ, battle_mach, clan_games,
-                           wall_wrecker, battle_blimp, stone_slammer, barracks, m.tag[1:], now)
-            conn.commit()
-            # Prep dict for Google
-            to_google.append({"tag": m.tag, "townHall": m.town_hall, "warStars": m.war_stars,
-                              "attackWins": m.attack_wins, "defenseWins": m.defense_wins,
-                              "bestTrophies": m.best_trophies, "barbKing": barb_king,
-                              "archQueen": arch_queen, "grandWarden": grand_warden, "batMach": battle_mach,
-                              "builderHallLevel": m.builder_hall, "versusTrophies": m.versus_trophies,
-                              "bestVersusTrophies": m.best_versus_trophies, "versusBattleWins": m.versus_attack_wins,
-                              "clanGames": clan_games, "name": m.name, "expLevel": m.exp_level, "trophies": m.trophies,
-                              "donations": m.donations, "donationsReceived": m.received, "clanRank": 0,
-                              "league": m.league.name, "role": m.role.name})
-        self.bot.logger.info("Done with SQL - Starting Google")
-        conn.close()
+        with Sql() as cursor:
+            try:
+                clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+                sql1 = ("INSERT INTO coc_oak (tag, playerName, XPLevel, trophies, donations, donReceived, league, "
+                        "leagueIcon, thLevel, warStars, attackWins, defenseWins, bestTrophies, vsTrophies, bestVsTrophies, "
+                        "versusBattleWins, builderHall, timestamp) "
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+                sql2 = ("UPDATE coc_oak "
+                        "SET barbKing = ?, archQueen = ?, grandWarden = ?, royalChamp = ?, battleMachine = ?, "
+                        "clanGames = ?, wallWrecker = ?, battleBlimp = ?, stoneSlammer = ?, siegeBarracks = ? "
+                        "WHERE tag = ? AND timestamp = ?")
+                self.bot.logger.debug("Starting member loop for SQL")
+                to_google = []
+                async for m in clan.get_detailed_members():
+                    clan_games = m.get_achievement("Games Champion").value if m.get_achievement("Games Champion") else 0
+                    barb_king = m.get_hero("Barbarian King").level if m.get_hero("Barbarian King") else 0
+                    arch_queen = m.get_hero("Archer Queen").level if m.get_hero("Archer Queen") else 0
+                    grand_warden = m.get_hero("Grand Warden").level if m.get_hero("Grand Warden") else 0
+                    royal_champ = m.get_hero("Royal Champion").level if m.get_hero("Royal Champion") else 0
+                    battle_mach = m.get_hero("Battle Machine").level if m.get_hero("Battle Machine") else 0
+                    wall_wrecker = m.siege_machines[0].level if len(m.siege_machines) > 0 else 0
+                    battle_blimp = m.siege_machines[1].level if len(m.siege_machines) > 1 else 0
+                    stone_slammer = m.siege_machines[2].level if len(m.siege_machines) > 2 else 0
+                    barracks = m.siege_machines[3].level if len(m.siege_machines) > 3 else 0
+                    cursor.execute(sql1, m.tag[1:], m.name, m.exp_level, m.trophies, m.donations, m.received,
+                                   m.league.name, m.league.icon.url, m.town_hall, m.war_stars, m.attack_wins,
+                                   m.defense_wins, m.best_trophies, m.versus_trophies, m.best_versus_trophies,
+                                   m.versus_attack_wins, m.builder_hall, now)
+                    cursor.execute(sql2, barb_king, arch_queen, grand_warden, royal_champ, battle_mach, clan_games,
+                                   wall_wrecker, battle_blimp, stone_slammer, barracks, m.tag[1:], now)
+                    # Prep dict for Google
+                    to_google.append({"tag": m.tag, "townHall": m.town_hall, "warStars": m.war_stars,
+                                      "attackWins": m.attack_wins, "defenseWins": m.defense_wins,
+                                      "bestTrophies": m.best_trophies, "barbKing": barb_king,
+                                      "archQueen": arch_queen, "grandWarden": grand_warden, "batMach": battle_mach,
+                                      "builderHallLevel": m.builder_hall, "versusTrophies": m.versus_trophies,
+                                      "bestVersusTrophies": m.best_versus_trophies, "versusBattleWins": m.versus_attack_wins,
+                                      "clanGames": clan_games, "name": m.name, "expLevel": m.exp_level, "trophies": m.trophies,
+                                      "donations": m.donations, "donationsReceived": m.received, "clanRank": 0,
+                                      "league": m.league.name, "role": m.role.name})
+            except:
+                self.bot.logger.exception("Background failed. You may need to reload. <@251150854571163648>")
+        self.bot.logger.debug("Done with SQL - Starting Google")
         payload = {"type": "players", "data": to_google}
         url = "https://script.google.com/macros/s/AKfycbzhXbO1CCcRuPzTU0mos7MowcucvclAKokkTiq91463xW1ftQEO/exec"
-        r = requests.post(url, data=json.dumps(payload))
+        requests.post(url, data=json.dumps(payload))
         self.bot.logger.info("Oak data push complete.")
 
     @oak_data_push.before_loop
