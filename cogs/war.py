@@ -877,7 +877,6 @@ class War(commands.Cog):
             u"• `/war unreserve <pos>` - remove mark-as-reserve from member",
             u"• `/war order <posrange> order text` - issue order for base or range of bases",
             u"• `/war tag <posrange> tag text` - tag members with at least one attack left",
-            u"• `/war difficult_bases` - show opponent bases with many defenses",
             u"• `/war add <player> <Discord Tag>` - add player to Discord user",
             u"• `/war check <tag or Discord ID>` - displays link information for specified user",
             u"• `/war users` - list current associations",
