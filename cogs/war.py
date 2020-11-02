@@ -880,6 +880,7 @@ class War(commands.Cog):
             u"• `/war difficult_bases` - show opponent bases with many defenses",
             u"• `/war add <player> <slacktag>` - add player to slack user",
             u"• `/war remove <player> <slacktag>` - remove player from slack user",
+            u"• `/war check <tag or Discord ID>` - displays link information for specified user",
             u"• `/war users` - list current associations",
             u"• `/war skip <clan|opponent> <posrange>` - mark player as skipped (for CWL)",
             u"• `/war skipped <clan|opponent>` - show players marked as skipped",
