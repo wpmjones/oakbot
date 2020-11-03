@@ -24,6 +24,9 @@ class WarSetup(commands.Cog):
         """ Assign inWar role to those participating in the current war """
         if new_war.is_cwl:
             # I'm not going to use this for CWL right now
+            self.bot.logger.info(f"CWL War State Change:\n"
+                                 f"{old_war.state} vs {old_war.opponent.name}\n"
+                                 f"{new_war.state} vs {new_war.opponent.name}")
             return
         if not self.guild:
             self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
