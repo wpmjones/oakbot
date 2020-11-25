@@ -43,7 +43,7 @@ class WarSetup(commands.Cog):
             for member in war.members:
                 if member.is_opponent:
                     continue
-                discord_id = await self.bot.links.get_discord_links(member.tag)
+                discord_id = await self.bot.links.get_link(member.tag)
                 user = self.guild.get_member(discord_id)
                 await user.add_roles(war_role, reason="Auto add role for war.")
                 names.append(user.display_name)
@@ -194,19 +194,17 @@ class WarSetup(commands.Cog):
         if war.state in ["preparation", "inWar"]:
             msg = await ctx.send("Adding roles. One moment...")
             war_role = guild.get_role(int(settings['oak_roles']['inwar']))
-            player_tags = [member.tag[1:] for member in war.members if not member.is_opponent]
-            sql = (f"SELECT discord_ID, '#' || player_tag as player_tag "
-                   f"FROM rcs_discord_links "
-                   f"WHERE player_tag = ANY($1)")
-            rows = await conn.fetch(sql, player_tags)
             names = []
-            try:
-                for row in rows:
-                    user = guild.get_member(int(row['discord_id']))
-                    await user.add_roles(war_role, reason="Command - Add role for war.")
+            for member in war.members:
+                try:
+                    if member.is_opponent:
+                        continue
+                    discord_id = await self.bot.links.get_link(member.tag)
+                    user = self.guild.get_member(discord_id)
+                    await user.add_roles(war_role, reason="Auto add role for war.")
                     names.append(user.display_name)
-            except:
-                self.bot.logger.exception("Add roles")
+                except:
+                    self.bot.logger.exception("Add roles")
             try:
                 if names:
                     embed = discord.Embed(title="War roles added", color=discord.Color.red())
