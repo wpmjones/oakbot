@@ -188,12 +188,12 @@ class WarSetup(commands.Cog):
     @commands.command(name="warroles", aliases=["warrole"], hidden=True)
     async def war_roles(self, ctx):
         """ Assign inWar role to those participating in the current war """
-        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
-        conn = self.bot.pool
+        if not self.guild:
+            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
         war = await self.bot.coc.get_current_war("#CVCJR89")
+        war_role = self.guild.get_role(int(settings['oak_roles']['inwar']))
         if war.state in ["preparation", "inWar"]:
             msg = await ctx.send("Adding roles. One moment...")
-            war_role = guild.get_role(int(settings['oak_roles']['inwar']))
             names = []
             for member in war.members:
                 try:
@@ -222,7 +222,6 @@ class WarSetup(commands.Cog):
         else:
             # refresh role object, pull members with that role, remove the role
             msg = await ctx.send("Removing war roles. One moment...")
-            war_role = guild.get_role(int(settings['oak_roles']['inwar']))
             members = war_role.members
             try:
                 for user in members:
