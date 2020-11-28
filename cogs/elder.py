@@ -152,7 +152,7 @@ class Elder(commands.Cog):
                 if discord_id:
                     guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
                     is_user, user = is_discord_user(guild, int(discord_id))
-                    if is_user and ban:
+                    if is_user and not ban:
                         await user.remove_roles(guild.get_role(settings['oak_roles']['member']), reason=reason)
                         content += " Member role has been removed."
                     if is_user and ban:
