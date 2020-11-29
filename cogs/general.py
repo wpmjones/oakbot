@@ -4,6 +4,7 @@ from discord.ext import commands
 from cogs.utils.db import Sql
 from cogs.utils.constants import leagues_to_emoji
 from cogs.utils.converters import PlayerConverter
+from coc import enums
 from config import settings, emojis, color_pick
 
 
@@ -71,8 +72,9 @@ class General(commands.Cog):
         player_tag = f"#{oak_stats.tag}"
         player = await self.bot.coc.get_player(player_tag)
         troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
-        sm_troops = ["Wall Wrecker", "Battle Blimp", "Stone Slammer", "Siege Barracks"]
-        super_troops = ["Super Archer", "Inferno Dragon", "Super Valkyrie", "Super Witch", "Headhunter"]
+        sm_troops = enums.SIEGE_MACHINE_ORDER
+        super_troops = enums.SUPER_TROOP_ORDER
+        super_troops.append("Super Minion")
         count = 0
         for troop in player.home_troops:
             if troop.name in super_troops:
