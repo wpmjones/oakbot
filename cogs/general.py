@@ -74,7 +74,6 @@ class General(commands.Cog):
         troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
         sm_troops = enums.SIEGE_MACHINE_ORDER
         super_troops = enums.SUPER_TROOP_ORDER
-        super_troops.append("Super Minion")
         count = 0
         for troop in player.home_troops:
             if troop.name in super_troops:
