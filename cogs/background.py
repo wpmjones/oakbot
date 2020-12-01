@@ -86,7 +86,7 @@ class Background(commands.Cog):
     async def before_oak_data_push(self):
         await self.bot.wait_until_ready()
 
-    @tasks.loop(hours=12.0)
+    @tasks.loop(hours=1.0)
     async def check_quercus(self):
         clan = await self.bot.coc.get_clan(clans['Reddit Quercus'])
         if not self.guild:
@@ -94,24 +94,22 @@ class Background(commands.Cog):
         quercus_role = self.guild.get_role(settings['oak_roles']['quercus'])
         not_in_links = []
         for member in clan.members:
-            try:
-                discord_id = await self.bot.links.get_link(member.tag)
-                if not discord_id:
-                    not_in_links.append(f"{member.name} ({member.tag})")
-                    continue
-                discord_member = self.guild.get_member(discord_id)
-                if not discord_member:
-                    print(discord_id, type(discord_id))
-                    continue
-                if quercus_role not in discord_member.roles:
-                    await discord_member.add_roles(quercus_role, "Auto-add in background. You're welcome!")
-            except ValueError:
+            discord_id = await self.bot.links.get_link(member.tag)
+            if not discord_id:
                 not_in_links.append(f"{member.name} ({member.tag})")
-        # if not_in_links:
-        #     channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
-        #     new_line = "\n"
-        #     await channel.send(f"The following players in Quercus are not in the links API:\n"
-        #                        f"{new_line.join(not_in_links)}")
+                continue
+            discord_member = self.guild.get_member(discord_id)
+            if not discord_member:
+                self.bot.logger.info(f"Couldn't find Discord member: {discord_id}: {type(discord_id)}")
+                continue
+            if quercus_role not in discord_member.roles:
+                await discord_member.add_roles(quercus_role, "Auto-add in background. You're welcome!")
+                self.bot.logger.info(f"Added Quercus role to {discord_member.display_name}.")
+        if not_in_links:
+            channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
+            new_line = "\n"
+            await channel.send(f"The following players in Quercus are not in the links API:\n"
+                               f"{new_line.join(not_in_links)}")
 
     @check_quercus.before_loop
     async def before_check_quercus(self):
