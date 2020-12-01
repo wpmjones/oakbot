@@ -18,7 +18,7 @@ class ThRoles(commands.Cog):
     async def on_player_townhall_upgrade(self, old_player, new_player):
         self.bot.logger.info(f"{new_player.name} changed from TH{old_player.town_hall} to TH{new_player.town_hall}")
         coc_chat = self.bot.get_channel(settings["oak_channels"]["coc_chat"])
-        discord_id = await self.bot.links.get_discord_link(new_player.tag)
+        discord_id = await self.bot.links.get_link(new_player.tag)
         self.bot.logger.info(f"Town Hall (line 22): Discord ID = {discord_id}")
         guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
         user = guild.get_member(discord_id)
@@ -36,7 +36,7 @@ class ThRoles(commands.Cog):
         guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
         clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
         for member in clan.members:
-            discord_id = await self.bot.links.get_discord_link(member.tag)
+            discord_id = await self.bot.links.get_link(member.tag)
             if not discord_id:
                 await ctx.send(f"No linked Discord ID for {member.name} ({member.tag})")
             player = await self.bot.coc.get_player(member.tag)
