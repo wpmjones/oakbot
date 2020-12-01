@@ -647,7 +647,7 @@ class War(commands.Cog):
                     discord_id = sh.cell(name_cell.row, 9).value
                     oak_resp += f"{player.name} ({player.tag}) is linked to <@{discord_id}> in the Oak Table.\n"
                 except gspread.CellNotFound:
-                    oak_resp += f"{player.name} ({player.tag}) not found in Oak Table."
+                    oak_resp += f"{player.name} ({player.tag}) not found in Oak Table.\n"
             await ctx.send(f"{links_resp}\n{oak_resp}")
 
     @war.command(name="add", hidden=True)
