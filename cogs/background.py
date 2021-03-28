@@ -86,7 +86,7 @@ class Background(commands.Cog):
     async def before_oak_data_push(self):
         await self.bot.wait_until_ready()
 
-    @tasks.loop(hours=1.0)
+    @tasks.loop(hours=24.0)
     async def check_quercus(self):
         clan = await self.bot.coc.get_clan(clans['Reddit Quercus'])
         if not self.guild:
