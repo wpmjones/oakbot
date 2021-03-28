@@ -63,10 +63,12 @@ class OwnerCog(commands.Cog):
 
     @commands.command(name="clear", hidden=True)
     @commands.is_owner()
-    async def clear(self, ctx, num_msgs):
-        async for message in ctx.channel.history(limit=num_msgs):
-            await message.delete()
-        await ctx.send(f"{num_msgs} message(s) deleted", delete_after=10)
+    async def clear(self, ctx, msg_count: int = None):
+        if msg_count:
+            await ctx.channel.purge(limit=msg_count + 1)
+        else:
+            async for message in ctx.channel.history():
+                await message.delete()
 
     @commands.command(name="presence", hidden=True)
     @commands.is_owner()
