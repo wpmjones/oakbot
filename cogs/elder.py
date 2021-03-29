@@ -323,8 +323,6 @@ class Elder(commands.Cog):
                 result = sheet.values().get(spreadsheetId=spreadsheetId, range=newMemberRange).execute()
                 values = result.get("values", [])
                 if arg == "list":
-                    # Set logging info
-                    args = {"Argument": "List"}
                     if not values:
                         content = "No new members at this time."
                     else:
@@ -336,8 +334,6 @@ class Elder(commands.Cog):
                                 content += " :boot:"
                 elif arg in ["kick", "move"]:
                     player_name = " ".join([x for x in args if x != arg])
-                    # Set logging info
-                    args = {"Argument": arg, "Player": player_name}
                     if not values:
                         content = "No new members at this time."
                     else:
@@ -350,6 +346,8 @@ class Elder(commands.Cog):
                                        f"&rowNum={str(row_num)}&source=Arborist")
                                 async with ctx.session.get(url) as r:
                                     if r.status == 200:
+                                        self.bot.logger.info(f"{player_name} {arg} by {ctx.author} using the "
+                                                             f"/un move command.")
                                         async for line in r.content:
                                             content = line.decode("utf-8")
                                 break
