@@ -1,5 +1,4 @@
 import discord
-import asyncio
 import season
 
 from discord.ext import commands
@@ -9,9 +8,7 @@ from cogs.utils.constants import clans
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from httplib2 import Http
-from io import BytesIO
 from oauth2client import file, client, tools
-from PIL import Image, ImageDraw, ImageFont
 from config import settings, color_pick, emojis
 
 
@@ -144,7 +141,7 @@ class Elder(commands.Cog):
             if found == 1:
                 # Make call to Google Sheet with info to perform move action
                 url = (f"{settings['google']['oak_table']}?call=kick&rowNum={str(row_num)}&reason={reason}"
-                       f"&ban={str(ban)}")
+                       f"&ban={str(ban)}&source=Arborist")
                 async with ctx.session.get(url) as r:
                     if r.status != 200:
                         await ctx.send("Please check the Oak Table. Removal was not successful.")
@@ -350,7 +347,7 @@ class Elder(commands.Cog):
                         for row in values:
                             if row[0] == player_name:
                                 url = (f"{settings['google']['oak_table']}?call=unconfirmed&command={arg}"
-                                       f"&rowNum={str(row_num)}")
+                                       f"&rowNum={str(row_num)}&source=Arborist")
                                 async with ctx.session.get(url) as r:
                                     if r.status == 200:
                                         async for line in r.content:

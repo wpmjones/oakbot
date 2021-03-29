@@ -661,7 +661,8 @@ class War(commands.Cog):
             return await ctx.send("Please provide a valid Discord ID or tag and ensure that this person is a "
                                   "member of the Reddit Oak Discord server.")
         # Add Discord ID to Oak Table
-        url = f"{settings['google']['oak_table']}?call=add_discord&tag={player.tag[1:]}&discord_id={member.id}"
+        url = (f"{settings['google']['oak_table']}?call=add_discord&tag={player.tag[1:]}&discord_id={member.id}"
+               f"&source=Arborist")
         async with self.bot.session.get(url) as r:
             if r.status >= 300:
                 await ctx.send("There was a problem adding the Discord ID to the Oak Table. Please contact "
