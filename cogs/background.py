@@ -124,7 +124,7 @@ class Background(commands.Cog):
         not_in_links = []
         for member in clan.members:
             try:
-                discord_id = self.bot.links.get_link(member.tag)
+                discord_id = await self.bot.links.get_link(member.tag)
                 if not discord_id:
                     gc = gspread.oauth()
                     ot = gc.open("Oak Table")
