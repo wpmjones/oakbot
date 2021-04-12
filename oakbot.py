@@ -72,7 +72,8 @@ class OakBot(commands.Bot):
         super().__init__(command_prefix=prefix,
                          description=description,
                          case_insensitive=True,
-                         intents=intents)
+                         intents=intents,
+                         )
         self.remove_command("help")
         coc_client.bot = self
         self.coc = coc_client

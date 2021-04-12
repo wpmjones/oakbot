@@ -71,7 +71,7 @@ class General(commands.Cog):
         # retrieve player info from coc.py
         player_tag = f"#{oak_stats.tag}"
         player = await self.bot.coc.get_player(player_tag)
-        troop_levels = builder_levels = spell_levels = hero_levels = builder_hero = sm_levels = ""
+        troop_levels = builder_levels = spell_levels = hero_levels = hero_pets_levels = builder_hero = sm_levels = ""
         sm_troops = enums.SIEGE_MACHINE_ORDER
         super_troops = enums.SUPER_TROOP_ORDER
         count = 0
@@ -87,7 +87,9 @@ class General(commands.Cog):
                         troop_levels += "\n"
                     else:
                         troop_levels += "\n\n"
-                troop_levels += f"{emojis['troops'][troop.name]}{str(troop.level)} "
+                # TODO Change to enums when ready
+                if troop.name not in ["L.A.S.S.I", "Electro Owl", "Mighty Yak", "Unicorn"]:
+                    troop_levels += f"{emojis['troops'][troop.name]}{str(troop.level)} "
                 if count % 6 == 0:
                     troop_levels += "\n"
             else:
@@ -99,7 +101,7 @@ class General(commands.Cog):
                 spell_levels += "\n"
                 count = 1
             spell_levels += f"{emojis['spells'][spell.name]}{str(spell.level)} "
-            if count % 6 == 0:
+            if count % 7 == 0:
                 spell_levels += "\n"
         count = 0
         for troop in player.builder_troops:
@@ -114,6 +116,10 @@ class General(commands.Cog):
                     hero_levels += f"{emojis['heroes'][hero.name]}{str(hero.level)} "
                 else:
                     builder_hero = f"{emojis['heroes'][hero.name]}{str(hero.level)}"
+            for troop in player.home_troops:
+                # TODO switch to enums
+                if troop.name in ["L.A.S.S.I", "Electro Owl", "Mighty Yak", "Unicorn"]:
+                    hero_pets_levels += f"{emojis['hero_pets'][troop.name]}{str(troop.level)} "
         embed = discord.Embed(title=f"{emojis['league'][leagues_to_emoji[player.league.name]]} "
                                     f"{player.name} "
                                     f"({player.tag})",
@@ -135,6 +141,8 @@ class General(commands.Cog):
         embed.add_field(name="Spell Levels", value=spell_levels, inline=False)
         if hero_levels != "":
             embed.add_field(name="Heroes", value=hero_levels, inline=False)
+        if hero_pets_levels != "":
+            embed.add_field(name="Hero Pets", value=hero_pets_levels, inline=False)
         embed.add_field(name="Builder Hall Level",
                         value=f"{emojis['bh_icon'][player.builder_hall]} {str(player.builder_hall)}",
                         inline=False)
