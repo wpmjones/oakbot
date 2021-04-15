@@ -19,7 +19,6 @@ initial_extensions = ["cogs.general",
                       "cogs.elder",
                       "cogs.owner",
                       "cogs.admin",
-                      "cogs.war",
                       ]
 
 if enviro == "LIVE":
@@ -32,6 +31,7 @@ if enviro == "LIVE":
     initial_extensions.append("cogs.throle")
     initial_extensions.append("cogs.background")
     initial_extensions.append("cogs.cwl")
+    initial_extensions.append("cogs.war")
     coc_email = settings['supercell']['user']
     coc_pass = settings['supercell']['pass']
 elif enviro == "home":

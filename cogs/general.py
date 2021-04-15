@@ -71,7 +71,8 @@ class General(commands.Cog):
         # retrieve player info from coc.py
         player_tag = f"#{oak_stats.tag}"
         player = await self.bot.coc.get_player(player_tag)
-        troop_levels = builder_levels = spell_levels = hero_levels = hero_pets_levels = builder_hero = sm_levels = ""
+        troop_levels = builder_levels = spell_levels = hero_levels = hero_pets_levels = builder_hero = \
+            sm_levels = super_troop_levels = ""
         sm_troops = enums.SIEGE_MACHINE_ORDER
         super_troops = enums.SUPER_TROOP_ORDER
         count = 0
@@ -87,8 +88,7 @@ class General(commands.Cog):
                         troop_levels += "\n"
                     else:
                         troop_levels += "\n\n"
-                # TODO Change to enums when ready
-                if troop.name not in ["L.A.S.S.I", "Electro Owl", "Mighty Yak", "Unicorn"]:
+                if troop.name not in enums.HERO_PETS_ORDER:
                     troop_levels += f"{emojis['troops'][troop.name]}{str(troop.level)} "
                 if count % 6 == 0:
                     troop_levels += "\n"
@@ -101,8 +101,17 @@ class General(commands.Cog):
                 spell_levels += "\n"
                 count = 1
             spell_levels += f"{emojis['spells'][spell.name]}{str(spell.level)} "
-            if count % 7 == 0:
-                spell_levels += "\n"
+        count = 0
+        # Handle Super Troops
+        for troop in player.home_troops:
+            if troop.name in super_troops:
+                count += 1
+                if troop.is_active:
+                    super_troop_levels += f"{emojis['super_troops_active'][troop.name]}{str(troop.level)} "
+                else:
+                    super_troop_levels += f"{emojis['super_troops'][troop.name]}{str(troop.level)} "
+                if count % 6 == 0:
+                    super_troop_levels += "\n"
         count = 0
         for troop in player.builder_troops:
             count += 1
@@ -117,8 +126,7 @@ class General(commands.Cog):
                 else:
                     builder_hero = f"{emojis['heroes'][hero.name]}{str(hero.level)}"
             for troop in player.home_troops:
-                # TODO switch to enums
-                if troop.name in ["L.A.S.S.I", "Electro Owl", "Mighty Yak", "Unicorn"]:
+                if troop.name in enums.HERO_PETS_ORDER:
                     hero_pets_levels += f"{emojis['hero_pets'][troop.name]}{str(troop.level)} "
         embed = discord.Embed(title=f"{emojis['league'][leagues_to_emoji[player.league.name]]} "
                                     f"{player.name} "
@@ -136,6 +144,8 @@ class General(commands.Cog):
         embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats.avgStars, 2)), inline=True)
         embed.add_field(name="This Season", value=oak_stats.warStats, inline=False)
         embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
+        if super_troop_levels != "":
+            embed.add_field(name="Super Troops", value=super_troop_levels, inline=False)
         if sm_levels != "":
             embed.add_field(name="Siege Machines", value=sm_levels, inline=False)
         embed.add_field(name="Spell Levels", value=spell_levels, inline=False)

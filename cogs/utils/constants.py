@@ -1,4 +1,5 @@
 leagues_to_emoji = {
+    "Legend League": "legend",
     "Titan League I": "titan1",
     "Titan League II": "titan2",
     "Titan League III": "titan3",
