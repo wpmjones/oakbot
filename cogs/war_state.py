@@ -185,9 +185,27 @@ class WarSetup(commands.Cog):
                             if len(misses) else "No missed attacks this war")
         await self.elder_channel.send(embed=embed)
 
-    @commands.command(name="warroles", aliases=["warrole"], hidden=True)
+    @commands.command(name="remove_warroles", aliases=["remove_warrole",], hidden=True)
+    async def remove_warrole(self, ctx):
+        """Remove inWar role from everyone"""
+        msg = await ctx.send("Removing war roles. One moment...")
+        if not self.guild:
+            self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        war_role = self.guild.get_role(int(settings['oak_roles']['inwar']))
+        members = war_role.members
+        try:
+            for user in members:
+                await user.remove_roles(war_role, reason="Command - Remove role after end of war.")
+        except:
+            self.bot.logger.exception("War Roles")
+        await msg.delete()
+        await ctx.send("inWar roles removed for all players.")
+        self.bot.logger.info("inWar role removed via command")
+
+    @commands.command(name="warroles", aliases=["warrole", "war_role", "war_roles"], hidden=True)
     async def war_roles(self, ctx):
-        """ Assign inWar role to those participating in the current war """
+        """ Assign inWar role to those participating in the current war
+        or remove inWar role from everyone if there is no active war."""
         if not self.guild:
             self.guild = self.bot.get_guild(settings['discord']['oakguild_id'])
         war = await self.bot.coc.get_current_war("#CVCJR89")
