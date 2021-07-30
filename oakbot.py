@@ -80,7 +80,7 @@ class OakBot(commands.Bot):
         self.links = links_client
         self.color = discord.Color.green()
         self.logger = logger
-        self.session = aiohttp.ClientSession(loop=self.loop)
+        self.session = None
         self.loop.create_task(self.after_ready())
 
         for extension in initial_extensions:
@@ -155,6 +155,7 @@ class OakBot(commands.Bot):
 
     async def after_ready(self):
         await self.wait_until_ready()
+        self.session = aiohttp.ClientSession(loop=self.loop)
         logger.add(self.send_log, level=log_level)
 
     async def close(self):

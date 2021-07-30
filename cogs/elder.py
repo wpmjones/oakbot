@@ -1,4 +1,5 @@
 import discord
+import gspread
 import season
 
 from discord.ext import commands
@@ -6,10 +7,13 @@ from cogs.utils.db import Sql
 from cogs.utils.checks import is_elder
 from cogs.utils.constants import clans
 from datetime import datetime, timedelta
-from googleapiclient.discovery import build
-from httplib2 import Http
-from oauth2client import file, client, tools
 from config import settings, color_pick, emojis
+
+# Connect to Google Sheets using gspread
+gc = gspread.service_account(filename="service_account.json")
+spreadsheet = gc.open_by_key(settings['google']['oak_table_id'])
+curr_member_range = "A3:A52"
+new_member_range = "A57:D61"
 
 
 class Elder(commands.Cog):
@@ -127,12 +131,11 @@ class Elder(commands.Cog):
             discord_id = fetched.slackId
             player_tag = fetched.tag
             self.bot.coc.remove_player_updates(player_tag)
-            # TODO This work really ought to be done by the sheet, not Python
-            result = sheet.values().get(spreadsheetId=spreadsheetId, range=currMemberRange).execute()
-            values = result.get("values", [])
+            sheet = spreadsheet.worksheet("Current Members")
+            result = sheet.get(curr_member_range)
             row_num = 3
             found = 0
-            for row in values:
+            for row in result:
                 if player.lower() == row[0].lower():
                     found = 1
                     break
@@ -278,93 +281,81 @@ class Elder(commands.Cog):
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @commands.command(name="stats", aliases=["stat", "check", "donations"], hidden=True)
+    @is_elder()
     async def stats(self, ctx):
         """ Respond with those players not yet meeting attack/donation rules """
-        if authorized(ctx.author.roles):
-            msg = await ctx.send("Retrieving statistics. One moment please.")
-            percent = season.get_days_since() / season.get_season_length()
-            attacks_needed = int(20 * percent)
-            donates_needed = int(600 * percent)
-            clan = await self.bot.coc.get_clan("#CVCJR89")
-            self.bot.logger.debug("Clan retrieved")
-            warn_text = (f"**We are {season.get_days_since()} days into a {season.get_season_length()} day season.\n"
-                         f"These statistics are based on what players should have this far into the season.**\n\n"
-                         f"*TH9 or below*\n")
-            low_text = high_text = ""
-            async for player in clan.get_detailed_members():
-                self.bot.logger.debug(f"Evaluating {player.name}")
-                if player.town_hall <= 9 and player.attack_wins < attacks_needed:
-                    low_text += (f"{player.name}{th_superscript(player.town_hall)} "
-                                 f"is below {attacks_needed} attack wins ({player.attack_wins}).\n")
-                elif player.town_hall >= 10 and player.donations < donates_needed:
-                    high_text += (f"{player.name}{th_superscript(player.town_hall)} "
-                                  f"is below {donates_needed} donations ({player.donations}).\n")
-            warn_text += low_text
-            warn_text += "\n\n*TH10 or above*\n"
-            warn_text += high_text
-            await msg.edit(content=warn_text)
-        else:
-            self.bot.logger.warning(f"User not authorized - "
-                                    f"{ctx.command} by {ctx.author} in {ctx.channel}")
-            await ctx.send("Wait a minute punk! You aren't allowed to use that command")
+        msg = await ctx.send("Retrieving statistics. One moment please.")
+        percent = season.get_days_since() / season.get_season_length()
+        attacks_needed = int(20 * percent)
+        donates_needed = int(600 * percent)
+        clan = await self.bot.coc.get_clan("#CVCJR89")
+        self.bot.logger.debug("Clan retrieved")
+        warn_text = (f"**We are {season.get_days_since()} days into a {season.get_season_length()} day season.\n"
+                     f"These statistics are based on what players should have this far into the season.**\n\n"
+                     f"*TH9 or below*\n")
+        low_text = high_text = ""
+        async for player in clan.get_detailed_members():
+            self.bot.logger.debug(f"Evaluating {player.name}")
+            if player.town_hall <= 9 and player.attack_wins < attacks_needed:
+                low_text += (f"{player.name}{th_superscript(player.town_hall)} "
+                             f"is below {attacks_needed} attack wins ({player.attack_wins}).\n")
+            elif player.town_hall >= 10 and player.donations < donates_needed:
+                high_text += (f"{player.name}{th_superscript(player.town_hall)} "
+                              f"is below {donates_needed} donations ({player.donations}).\n")
+        warn_text += low_text
+        warn_text += "\n\n*TH10 or above*\n"
+        warn_text += high_text
+        await msg.edit(content=warn_text)
 
     @commands.command(name="unconfirmed", aliases=["un"], hidden=True)
+    @is_elder()
     async def unconfirmed(self, ctx, *args):
         """Commands to deal with players who have not confirmed the rules
         list - Show members who have not confirmed the rules
         kick playername - Move specified player to No Confirmation
         move playername - Move specified player to Regular Members"""
-        if authorized(ctx.author.roles):
-            async with ctx.typing():
-                if len(args) == 0:
-                    arg = "list"
-                else:
-                    arg = args[0]
-                result = sheet.values().get(spreadsheetId=spreadsheetId, range=newMemberRange).execute()
-                values = result.get("values", [])
+        async with ctx.typing():
+            if len(args) == 0:
+                arg = "list"
+            else:
+                arg = args[0]
+            sheet = spreadsheet.worksheet("Current Members")
+            try:
+                result = sheet.get(new_member_range)
                 if arg == "list":
-                    if not values:
-                        content = "No new members at this time."
-                    else:
-                        content = "**Unconfirmed new members:**"
-                        for row in values:
-                            content += "\n" + row[0] + " joined on " + row[3]
-                            if (datetime.now() - timedelta(hours=6) - datetime.strptime(row[3], "%d-%b-%y")
-                                    > timedelta(days=2)):
-                                content += " :boot:"
+                    content = "**Unconfirmed new members:**"
+                    for row in result:
+                        content += "\n" + row[0] + " joined on " + row[3]
+                        if (datetime.now() - timedelta(hours=6) - datetime.strptime(row[3], "%d-%b-%y")
+                                > timedelta(days=2)):
+                            content += " :boot:"
                 elif arg in ["kick", "move"]:
                     player_name = " ".join([x for x in args if x != arg])
-                    if not values:
-                        content = "No new members at this time."
-                    else:
-                        # Set message if member not found. This will change in for loop if member is found.
-                        content = "I had trouble finding that member.  Could you please try again?"
-                        row_num = 57
-                        for row in values:
-                            if row[0] == player_name:
-                                url = (f"{settings['google']['oak_table']}?call=unconfirmed&command={arg}"
-                                       f"&rowNum={str(row_num)}&source=Arborist")
-                                async with ctx.session.get(url) as r:
-                                    if r.status == 200:
-                                        self.bot.logger.info(f"{player_name} {arg} by {ctx.author} using the "
-                                                             f"/un move command.")
-                                        async for line in r.content:
-                                            content = line.decode("utf-8")
-                                break
-                            else:
-                                row_num += 1
+                    # Set message if member not found. This will change in for loop if member is found.
+                    content = "I had trouble finding that member.  Could you please try again?"
+                    row_num = 57
+                    for row in result:
+                        if row[0] == player_name:
+                            url = (f"{settings['google']['oak_table']}?call=unconfirmed&command={arg}"
+                                   f"&rowNum={str(row_num)}&source=Arborist")
+                            async with ctx.session.get(url) as r:
+                                if r.status == 200:
+                                    self.bot.logger.info(f"{player_name} {arg} by {ctx.author} using the "
+                                                         f"/un move command.")
+                                    async for line in r.content:
+                                        content = line.decode("utf-8")
+                            break
+                        else:
+                            row_num += 1
                 else:
                     self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                                             f"Problem: Invalid arguments - {' '.join(args)}")
                     content = "You have provided an invalid argument. Please specify `list`, `kick`, or `move`."
                     await ctx.send(content)
                     return
-                await ctx.send(content)
-        else:
-            self.bot.logger.warning(f"User not authorized - "
-                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Request: {' '.join(args)}")
-            await ctx.send("Wait a minute punk! You aren't allowed to use that command")
+            except KeyError:
+                content = "No new members at this time."
+            await ctx.send(content)
 
 
 def authorized(user_roles):
@@ -402,20 +393,6 @@ def th_superscript(s):
     for c in s:
         ret += sup(c)
     return ret
-
-
-scope = "https://www.googleapis.com/auth/spreadsheets.readonly"
-spreadsheetId = settings['google']['oak_table_id']
-currMemberRange = "Current Members!A3:A52"
-newMemberRange = "Current Members!A57:D61"
-
-store = file.Storage("token.json")
-creds = store.get()
-if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets("credentials.json", scope)
-    creds = tools.run_flow(flow, store)
-service = build("sheets", "v4", http=creds.authorize(Http()), cache_discovery=False)
-sheet = service.spreadsheets()
 
 
 def setup(bot):
