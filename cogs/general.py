@@ -143,6 +143,8 @@ class General(commands.Cog):
         embed.add_field(name="Wars in Oak", value=oak_stats.numWars, inline=True)
         embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats.avgStars, 2)), inline=True)
         embed.add_field(name="This Season", value=oak_stats.warStats, inline=False)
+        war_preference = "Opted In" if player.war_opted_in else "Opted Out"
+        embed.add_field(name="War Preference", value=war_preference, inline=False)
         embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
         if super_troop_levels != "":
             embed.add_field(name="Super Troops", value=super_troop_levels, inline=False)

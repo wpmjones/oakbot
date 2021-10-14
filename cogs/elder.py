@@ -357,6 +357,27 @@ class Elder(commands.Cog):
                 content = "No new members at this time."
             await ctx.send(content)
 
+    @commands.command(name="optedin", aliases=["opted", "opted_in", "war_preference"], hidden=True)
+    @is_elder()
+    async def opted_in(self, ctx, th_level: int = 0):
+        clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
+        opted_in = "**Players Opted In:**\n"
+        opted_out = "**Players Opted Out:**\n"
+        if th_level == 0:
+            async for player in clan.get_detailed_members():
+                if player.war_opted_in:
+                    opted_in += f"{player.name} (TH{player.town_hall})\n"
+                else:
+                    opted_out += f"{player.name} (TH{player.town_hall})\n"
+        else:
+            async for player in clan.get_detailed_members():
+                if player.town_hall == th_level:
+                    if player.war_opted_in:
+                        opted_in += f"{player.name}\n"
+                    else:
+                        opted_out += f"{player.name}\n"
+        await ctx.send(f"{opted_in}\n{opted_out}")
+
 
 def authorized(user_roles):
     for role in user_roles:
