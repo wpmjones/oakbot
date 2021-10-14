@@ -62,6 +62,9 @@ class Elder(commands.Cog):
             un_move = ("Move specified player to Regular Member "
                        "(if they failed the quiz or didn't move for some other reason.")
             embed.add_field(name="/unconfirmed move <in-game name>", value=un_move, inline=False)
+        if command in ["help", "optedin"]:
+            optedin = "List the war preference for clan members (include number to limit to a specific TH level."
+            embed.add_field(name="/optedin", value=optedin, inline=False)
         await ctx.send(embed=embed)
         self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
 
@@ -360,6 +363,10 @@ class Elder(commands.Cog):
     @commands.command(name="optedin", aliases=["opted", "opted_in", "war_preference"], hidden=True)
     @is_elder()
     async def opted_in(self, ctx, th_level: int = 0):
+        """List the war preference for players. Limited to town hall level if provided
+        /optedin
+        /optedin 13
+        /optedin 9"""
         clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
         opted_in = "**Players Opted In:**\n"
         opted_out = "**Players Opted Out:**\n"
