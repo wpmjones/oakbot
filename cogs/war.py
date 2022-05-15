@@ -636,7 +636,7 @@ class War(commands.Cog):
                     links_resp += f"Player Tag {tag} is linked to <@{tag_or_id}>.\n"
                     tag_list.append(tag)
             # Check Oak Table
-            gc = gspread.oauth()
+            gc = gspread.service_account(filename="service_account.json")
             ot = gc.open("Oak Table")
             sh = ot.worksheet("Current Members")
             oak_resp = "**Oak Table Links:**\n"

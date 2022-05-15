@@ -57,7 +57,7 @@ class OwnerCog(commands.Cog):
     @commands.command(name="gspread", hidden=True)
     @commands.is_owner()
     async def gspread(self, ctx):
-        gc = gspread.oauth()
+        gc = gspread.service_account(filename="service_account.json")
         sh = gc.open("Oak Table")
         await ctx.send(f"Success!  A3 = {sh.sheet1.get('A3')}")
 

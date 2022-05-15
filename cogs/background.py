@@ -126,7 +126,7 @@ class Background(commands.Cog):
             try:
                 discord_id = await self.bot.links.get_link(member.tag)
                 if not discord_id:
-                    gc = gspread.oauth()
+                    gc = gspread.service_account(filename="service_account.json")
                     ot = gc.open("Oak Table")
                     sh = ot.worksheet("Current Members")
                     name_cell = sh.find(member.name)

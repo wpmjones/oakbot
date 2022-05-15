@@ -23,7 +23,7 @@ initial_extensions = ["cogs.general",
 
 if enviro == "LIVE":
     token = settings['discord']['oakbot_token']
-    prefix = "/"
+    prefix = "//"
     log_level = "INFO"
     coc_names = "galaxy"
     initial_extensions.append("cogs.members")
