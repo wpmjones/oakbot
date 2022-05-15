@@ -637,7 +637,7 @@ class War(commands.Cog):
                     tag_list.append(tag)
             # Check Oak Table
             gc = gspread.service_account(filename="service_account.json")
-            ot = gc.open("Oak Table")
+            ot = gc.open_by_key(settings['google']['oak_table_id'])
             sh = ot.worksheet("Current Members")
             oak_resp = "**Oak Table Links:**\n"
             for tag in tag_list:
