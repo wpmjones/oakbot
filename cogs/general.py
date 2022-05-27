@@ -1,4 +1,5 @@
 import discord
+import gspread
 
 from discord.ext import commands
 from cogs.utils.db import Sql
@@ -325,6 +326,20 @@ class General(commands.Cog):
     async def invite(self, ctx):
         await ctx.send("https://discord.me/redditoak")
 
+    @commands.command(name="next")
+    async def _next(self, ctx):
+        """Clan Capital Upgrade information. This command will respond with the next recommended
+        upgrades for the Clan Capital."""
+        gc = gspread.service_account(filename="service_account.json")
+        sheet = gc.open_by_key(settings['google']['capital_id'])
+        sh = sheet.worksheet("Clan Capital Upgrades")
+        values = sh.get("K4:L6")
+        embed = discord.Embed(title="Clan Capital Upgrades",
+                              description="Please use this as a guide for spending your Capital Gold",
+                              color=discord.Color.dark_purple())
+        for row in values:
+            embed.add_field(name=row[0], value=row[1])
+        await ctx.send(embed=embed)
 
 def is_discord_user(guild, discord_id):
     try:
