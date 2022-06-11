@@ -1,8 +1,8 @@
 import coc
-import discord
+import nextcord
 import random
 
-from discord.ext import commands
+from nextcord.ext import commands
 from config import settings
 
 
@@ -53,13 +53,13 @@ class MembersCog(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def joined(self, ctx, *, member: discord.Member):
+    async def joined(self, ctx, *, member: nextcord.Member):
         """Says when a member joined."""
         await ctx.send(f"{member.display_name} joined on {member.joined_at}")
 
     @commands.command(name="perms", aliases=["perms_for", "permissions"])
     @commands.guild_only()
-    async def check_permissions(self, ctx, *, member: discord.Member = None):
+    async def check_permissions(self, ctx, *, member: nextcord.Member = None):
         """A simple command which checks a members Guild Permissions.
         If member is not provided, the author will be checked."""
 
@@ -70,7 +70,7 @@ class MembersCog(commands.Cog):
         perms = "\n".join(perm for perm, value in member.guild_permissions if value)
 
         # And to make it look nice, we wrap it in an Embed.
-        embed = discord.Embed(title="Permissions for:", description=ctx.guild.name, colour=member.colour)
+        embed = nextcord.Embed(title="Permissions for:", description=ctx.guild.name, colour=member.colour)
         embed.set_author(icon_url=member.avatar_url, name=str(member))
 
         # \uFEFF is a Zero-Width Space, which basically allows us to have an empty field name.

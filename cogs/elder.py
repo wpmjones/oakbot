@@ -1,8 +1,8 @@
-import discord
+import nextcord
 import gspread
 import season
 
-from discord.ext import commands
+from nextcord.ext import commands
 from cogs.utils.db import Sql
 from cogs.utils.checks import is_elder
 from cogs.utils.constants import clans
@@ -25,7 +25,7 @@ class Elder(commands.Cog):
     @is_elder()
     async def elder(self, ctx, command: str = "help"):
         """Help menu for elder staff"""
-        embed = discord.Embed(title="Reddit Oak Elder Help Menu",
+        embed = nextcord.Embed(title="Reddit Oak Elder Help Menu",
                               description="All the elder commands you need but can't remember how to use!",
                               color=color_pick(66, 134, 244))
         embed.add_field(name="Commands:", value="-----------", inline=True)
@@ -75,7 +75,7 @@ class Elder(commands.Cog):
 
     @commands.command(name="role", hidden=True)
     @commands.guild_only()
-    async def role(self, ctx, user: discord.Member, role_name):
+    async def role(self, ctx, user: nextcord.Member, role_name):
         """Command to add/remove roles from users"""
         if authorized(ctx.author.roles):
             # get role ID for specified role
@@ -193,7 +193,7 @@ class Elder(commands.Cog):
                        "GROUP BY player_name "
                        "ORDER BY player_name")
                 strikes = await conn.fetch(sql)
-                embed = discord.Embed(title="Reddit Oak Warning Count",
+                embed = nextcord.Embed(title="Reddit Oak Warning Count",
                                       description="All warnings expire after 60 days.",
                                       color=color_pick(181, 0, 0))
                 embed_text = ""
@@ -215,7 +215,7 @@ class Elder(commands.Cog):
                         strikes[name] = ""
                     strikes[name] += strike['warning_text'] + "\n"
                 print(strikes)
-                embed = discord.Embed(title="Reddit Oak Watchlist",
+                embed = nextcord.Embed(title="Reddit Oak Watchlist",
                                       description="All warnings expire after 60 days.",
                                       color=color_pick(181, 0, 0))
                 for name, strike in strikes.items():

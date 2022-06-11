@@ -1,12 +1,36 @@
-import discord
+import nextcord
 import gspread
 
-from discord.ext import commands
+from nextcord import ui, Interaction
+from nextcord.ext import commands
 from cogs.utils.db import Sql
 from cogs.utils.constants import leagues_to_emoji
 from cogs.utils.converters import PlayerConverter
 from coc import enums
 from config import settings, emojis, color_pick
+
+
+class Button(ui.Button):
+    def __init__(self, player):
+        super().__init__(
+            label=player.name,
+            style=nextcord.ButtonStyle.blurple,
+            custom_id=player.tag,
+            emoji=emojis['th_icon'][player.town_hall]
+        )
+
+    async def callback(self, interaction: Interaction):
+        self.view.value = self.custom_id
+        self.view.stop()
+
+
+class ButtonView(nextcord.ui.View):
+    def __init__(self, players):
+        super().__init__()
+        self.value = None
+
+        for player in players:
+            self.add_item(Button(player))
 
 
 class General(commands.Cog):
@@ -129,7 +153,7 @@ class General(commands.Cog):
             for troop in player.home_troops:
                 if troop.name in enums.HERO_PETS_ORDER:
                     hero_pets_levels += f"{emojis['hero_pets'][troop.name]}{str(troop.level)} "
-        embed = discord.Embed(title=f"{emojis['league'][leagues_to_emoji[player.league.name]]} "
+        embed = nextcord.Embed(title=f"{emojis['league'][leagues_to_emoji[player.league.name]]} "
                                     f"{player.name} "
                                     f"({player.tag})",
                               color=color_pick(226, 226, 26))
@@ -172,10 +196,10 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="avatar", hidden=True)
-    async def avatar(self, ctx, user: discord.Member):
+    async def avatar(self, ctx, user: nextcord.Member):
         # convert discord mention to user id only
         guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
-        embed = discord.Embed(color=discord.Color.blue())
+        embed = nextcord.Embed(color=nextcord.Color.blue())
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
         embed.set_image(url=user.avatar_url_as(size=128))
         await ctx.send(embed=embed)
@@ -203,7 +227,7 @@ class General(commands.Cog):
             await ctx.send(f"{emojis['other']['redx']} You have provided a command that does not exist. "
                            f"Perhaps try /help to see all commands.")
             return
-        embed = discord.Embed(title="The Arborist by Reddit Oak", description=desc, color=color_pick(15, 250, 15))
+        embed = nextcord.Embed(title="The Arborist by Reddit Oak", description=desc, color=color_pick(15, 250, 15))
         embed.add_field(name="Commands:", value="-----------", inline=True)
         if command in ["all", "siege"]:
             siege = ("Posts request for the specified siege machine in Discord and tags those players that can donate."
@@ -232,8 +256,8 @@ class General(commands.Cog):
     async def sheet(self, ctx):
         await ctx.send(settings['google']['oak_sheet'])
 
-    @commands.command(name="siege", aliases=["sm"])
-    async def siege_request(self, ctx, *, siege_req: str = "help"):
+    @nextcord.slash_command(name="sm", guild_ids=[settings['discord']['oakguild_id']])
+    async def siege(self, interaction: Interaction, *, siege_req):
         """- For requesting siege machines
 
         Options:
@@ -241,6 +265,8 @@ class General(commands.Cog):
          - air1, blimp, battle blimp, bb
          - air2, stone, slam, slammer, stone slammer
          - barracks, sb
+         - log, launcher, log launcher
+         - flame, flinger, flame flinger
 
          **Example:**
          /siege wall wrecker
@@ -248,21 +274,23 @@ class General(commands.Cog):
          /siege Stone Slammer
          /siege barracks
          """
-        user_id = ctx.author.id
+        user_id = interaction.user.id
+        channel = interaction.channel
         if siege_req == "help":
-            embed = discord.Embed(title="The Arborist by Reddit Oak", color=color_pick(15, 250, 15))
+            embed = nextcord.Embed(title="The Arborist by Reddit Oak", color=color_pick(15, 250, 15))
             embed.add_field(name="Commands:", value="-----------", inline=True)
             siege = ("Posts request for the specified siege machine in Discord and tags those players that can donate."
                      "\n**ground**: Wall Wrecker"
                      "\n**blimp**: Battle Blimp"
                      "\n**slammer**: Stone Slammer"
-                     "\n**barracks**: Siege Barracks")
+                     "\n**barracks**: Siege Barracks"
+                     "\n**launcher**: Log Launcher"
+                     "\n**flinger**: Flame Flinger")
             embed.add_field(name="/siege <siege type>", value=siege, inline=False)
             embed.set_footer(icon_url="https://openclipart.org/image/300px/svg_to_png/122449/1298569779.png",
                              text="The Arborist proudly maintained by TubaKid.")
-            await ctx.send(embed=embed)
-            return
-        if siege_req in ["ww", "wall wrecker"]:
+            return await interaction.send(embed=embed)
+        if siege_req in ["ww", "wall wrecker", "ground"]:
             siege_name = "Wall Wrecker"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-ram.png"
         elif siege_req in ["blimp", "air1", "bb", "battle blimp"]:
@@ -274,11 +302,16 @@ class General(commands.Cog):
         elif siege_req in ["barracks", "sb", "seige barracks", "baracks"]:
             siege_name = "Siege Barracks"
             thumb = "https://coc.guide/static/imgs/troop/siege-machine-carrier.png"
+        elif siege_req in ["log", "launcher", "log launcher", "ll"]:
+            siege_name = "Log Launcher"
+            thumb = "https://coc.guide/static/imgs/troop/siege-log-launcher.png"
+        elif siege_req in ["flame", "flinger", "flame flinger", "ff"]:
+            siege_name = "Flame Flinger"
+            thumb = "https://coc.guide/static/imgs/troop/siege-catapult.png"
         else:
-            await ctx.send("You have provided an invalid siege machine type. "
-                           "Please specify `ground`, `blimp`, `slammer`, or `barracks`")
-            return
-        sent_msg = await ctx.send(f"One moment while I check to see who has those.")
+            return await interaction.response.send_message("You have provided an invalid siege machine type. "
+                                                           "Please specify `ground`, `blimp`, `slammer`, `barracks`, "
+                                                           "`launcher`, or `flinger`.")
         donors = []
         requestor = None
         # get requestor player tag from Discord ID
@@ -286,37 +319,51 @@ class General(commands.Cog):
         requestor_tag = await self.bot.links.get_linked_players(user_id)
         # Remove any links for player tags that aren't currently in Oak
         if len(requestor_tag) > 1:
-            clan_tags = [x.tag for x in clan.members]
+            member_tags = [x.tag for x in clan.members]
             for tag in requestor_tag:
-                if tag not in clan_tags:
+                if tag not in member_tags:
                     requestor_tag.remove(tag)
-        # If still more than one, prompt user for correct player
+        # if still more than one, remove TH9 and below
         if len(requestor_tag) > 1:
-            prompt_text = "You have more than one player in Reddit Oak. Please select the correct player:"
-            counter = 1
+            players = []
             for tag in requestor_tag:
                 player = await self.bot.coc.get_player(tag)
-                prompt_text += f"\n{counter}. {player.name} ({player.tag})"
-            prompt = ctx.prompt(prompt_text, additional_options=len(requestor_tag))
-            requestor_tag = requestor_tag[prompt - 1]
+                if player.town_hall >= 10:
+                    players.append(player)
+            # if still more than one, prompt user
+            if len(players) > 1:
+                view = ButtonView(players)
+                await interaction.send(content="Please select the appropriate player", view=view)
+                await view.wait()
+                if view.value:
+                    requestor_tag = view.value
+                else:
+                    # timed out, pick at random
+                    requestor_tag = players[0].tag
+        # confirm we are down to just a str
+        if not isinstance(requestor_tag, str):
+            requestor_tag = requestor_tag[0]
+        # We should now have a single requestor tag to work with
+        self.bot.logger.debug(f"SM Requestor Tag is {requestor_tag}")
+        await interaction.response.send_message(f"Searching for clan members with a {siege_name}...")
         # find oak players with the requested siege machine
         async for player in clan.get_detailed_members():
             if siege_name in [troop.name for troop in player.siege_machines]:
-                discord_id = await self.bot.links.get_discord_links(player.tag)
+                discord_id = await self.bot.links.get_link(player.tag)
                 donors.append(f"{player.name}: <@{discord_id}>")
             if requestor_tag == player.tag:
                 requestor = player.name
         if not requestor:
-            requestor = ctx.author.name
-        await sent_msg.delete()
-        embed = discord.Embed(title=f"{siege_name} Request",
-                              description=f"{requestor} has requested a {siege_name}",
-                              color=0xb5000)
+            requestor = interaction.user.display_name
+        embed = nextcord.Embed(title=f"{siege_name} Request",
+                               description=f"{requestor} has requested a {siege_name}",
+                               color=0xb5000)
         embed.set_footer(icon_url=thumb, text="Remember to select your siege machine when you attack!")
         content = "**Potential donors include:**\n"
         content += "\n".join(donors)
-        await ctx.send(embed=embed)
-        await ctx.send(content)
+        self.bot.logger.debug(content)
+        await channel.send(embed=embed)
+        await channel.send(content)
 
     @commands.command(name="nickname")
     async def nickname(self, ctx):
@@ -334,9 +381,9 @@ class General(commands.Cog):
         sheet = gc.open_by_key(settings['google']['capital_id'])
         sh = sheet.worksheet("Clan Capital Upgrades")
         values = sh.get("K4:L6")
-        embed = discord.Embed(title="Clan Capital Upgrades",
+        embed = nextcord.Embed(title="Clan Capital Upgrades",
                               description="Please use this as a guide for spending your Capital Gold",
-                              color=discord.Color.dark_purple())
+                              color=nextcord.Color.dark_purple())
         for row in values:
             embed.add_field(name=row[0], value=row[1])
         await ctx.send(embed=embed)

@@ -1,8 +1,8 @@
 import coc
-import discord
+import nextcord
 import asyncio
 
-from discord.ext import commands
+from nextcord.ext import commands
 from cogs.utils.constants import clans
 from cogs.war import member_display
 from config import settings
@@ -49,7 +49,7 @@ class WarSetup(commands.Cog):
                 names.append(user.display_name)
             try:
                 if names:
-                    embed = discord.Embed(title="War roles added", color=discord.Color.red())
+                    embed = nextcord.Embed(title="War roles added", color=nextcord.Color.red())
                     embed.add_field(name="Members in War", value="\n".join(names), inline=False)
                     hours_left = war.end_time.seconds_until // 3600
                     minutes_left = (war.end_time.seconds_until - (hours_left*3600)) // 60
@@ -76,7 +76,7 @@ class WarSetup(commands.Cog):
                             "lost": "lost",
                             "tie": "tied! We actually tied!"
                             }[new_war.status]
-            color = {"won": discord.Color.green(), "lost": discord.Color.red(), "tie": discord.Color.gold()}[
+            color = {"won": nextcord.Color.green(), "lost": nextcord.Color.red(), "tie": nextcord.Color.gold()}[
                 new_war.status]
             defenses = sorted((m for m in new_war.clan.members if m.defense_count >= 2),
                               key=lambda m: m.defense_count,
@@ -89,7 +89,7 @@ class WarSetup(commands.Cog):
                 if member.star_count == 6:
                     sixers.append(member)
             sixers = sorted((member for member in sixers), key=lambda m: m.map_position)
-            embed = discord.Embed(color=color, title=f"War is over and we {results_text}!")
+            embed = nextcord.Embed(color=color, title=f"War is over and we {results_text}!")
             embed.set_thumbnail(url=f"http://www.mayodev.com/images/{new_war.status}.png")
             embed.add_field(name="Reddit Oak",
                             value=f"{new_war.clan.stars} Stars\nDestruction: {new_war.clan.destruction:.1f}%",
@@ -116,7 +116,7 @@ class WarSetup(commands.Cog):
                 if member and len(member.attacks) < 2:
                     misses.append(member)
             misses.sort(key=lambda m: m.map_position)
-            embed = discord.Embed(name="Elder war summary")
+            embed = nextcord.Embed(name="Elder war summary")
             embed.add_field(name="Missed attacks",
                             value="\n".join("{} missed {}".format(member_display(m),
                                                                   "1 attack" if len(m.attacks) == 1 else "2 attacks")
@@ -135,7 +135,7 @@ class WarSetup(commands.Cog):
                         "lost": "lost",
                         "tie": "tied! We actually tied!"
                         }[new_war.status]
-        color = {"won": discord.Color.green(), "lost": discord.Color.red(), "tie": discord.Color.gold()}[new_war.status]
+        color = {"won": nextcord.Color.green(), "lost": nextcord.Color.red(), "tie": nextcord.Color.gold()}[new_war.status]
         defenses = sorted((m for m in new_war.clan.members if m.defense_count >= 2),
                           key=lambda m: m.defense_count,
                           reverse=True)
@@ -147,7 +147,7 @@ class WarSetup(commands.Cog):
             if member.star_count == 6:
                 sixers.append(member)
         sixers = sorted((member for member in sixers), key=lambda m: m.map_position)
-        embed = discord.Embed(color=color, title=f"War is over and we {results_text}!")
+        embed = nextcord.Embed(color=color, title=f"War is over and we {results_text}!")
         embed.set_thumbnail(url=f"http://www.mayodev.com/images/{new_war.status}.png")
         embed.add_field(name="Reddit Oak",
                         value=f"{new_war.clan.stars} Stars\nDestruction: {new_war.clan.destruction:.1f}%",
@@ -178,7 +178,7 @@ class WarSetup(commands.Cog):
             if member and len(member.attacks) < 2:
                 misses.append(member)
         misses.sort(key=lambda m: m.map_position)
-        embed = discord.Embed(name="Elder war summary")
+        embed = nextcord.Embed(name="Elder war summary")
         embed.add_field(name="Missed attacks",
                         value="\n".join("{} missed {}".format(member_display(m),
                             "1 attack" if len(m.attacks) == 1 else "2 attacks") for m in misses)
@@ -225,7 +225,7 @@ class WarSetup(commands.Cog):
                     self.bot.logger.exception("Add roles")
             try:
                 if names:
-                    embed = discord.Embed(title="War roles added", color=discord.Color.red())
+                    embed = nextcord.Embed(title="War roles added", color=nextcord.Color.red())
                     embed.add_field(name="Members in War", value="\n".join(names), inline=False)
                     hours_left = war.end_time.seconds_until // 3600
                     minutes_left = (war.end_time.seconds_until - (hours_left * 3600)) // 60

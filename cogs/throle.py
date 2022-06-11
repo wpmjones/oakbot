@@ -1,6 +1,6 @@
 import coc
 
-from discord.ext import commands
+from nextcord.ext import commands
 from cogs.utils.constants import clans
 from config import settings
 
@@ -33,7 +33,7 @@ class ThRoles(commands.Cog):
     @commands.command(name="add_th_roles")
     @commands.is_owner()
     async def add_roles(self, ctx):
-        guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
+        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
         clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
         for member in clan.members:
             discord_id = await self.bot.links.get_link(member.tag)
@@ -52,8 +52,8 @@ class ThRoles(commands.Cog):
         await ctx.send("Town hall roles added. Bam!")
 
     async def get_th_role(self, th_level):
-        guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
-        role_id = settings["oak_roles"][f"TH{th_level}"]
+        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        role_id = settings['oak_roles'][f"TH{th_level}"]
         return guild.get_role(role_id=role_id)
 
 

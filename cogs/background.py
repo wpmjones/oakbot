@@ -3,7 +3,7 @@ import json
 import requests
 import sys
 
-from discord.ext import commands, tasks
+from nextcord.ext import commands, tasks
 from cogs.utils.constants import clans
 from cogs.utils.db import Sql
 from datetime import datetime

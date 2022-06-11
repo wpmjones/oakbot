@@ -3,9 +3,9 @@ import sys
 import coc
 import asyncio
 import aiohttp
-import discord
+import nextcord
 
-from discord.ext import commands
+from nextcord.ext import commands
 from coc.ext import discordlinks
 from cogs.utils import context
 from cogs.utils.db import Psql
@@ -63,7 +63,7 @@ coc_client = coc.login(coc_email,
 links_client = discordlinks.login(settings['links']['user'],
                                   settings['links']['pass'])
 
-intents = discord.Intents.default()
+intents = nextcord.Intents.default()
 intents.members = True
 
 
@@ -78,7 +78,7 @@ class OakBot(commands.Bot):
         coc_client.bot = self
         self.coc = coc_client
         self.links = links_client
-        self.color = discord.Color.green()
+        self.color = nextcord.Color.green()
         self.logger = logger
         self.session = None
         self.loop.create_task(self.after_ready())
@@ -123,7 +123,7 @@ class OakBot(commands.Bot):
             await ctx.author.send("Oops. This command is disabled and cannot be used.")
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
-            if not isinstance(original, discord.HTTPException):
+            if not isinstance(original, nextcord.HTTPException):
                 self.logger.error(f"In {ctx.command.qualified_name}:", file=sys.stderr)
                 traceback.print_tb(original.__traceback__)
                 self.logger.error(f"{original.__class__.__name__}: {original}", file=sys.stderr)
@@ -131,7 +131,7 @@ class OakBot(commands.Bot):
             await ctx.send(error)
 
     async def on_error(self, event_method, *args, **kwargs):
-        e = discord.Embed(title="Discord Event Error", color=0xa32952)
+        e = nextcord.Embed(title="Discord Event Error", color=0xa32952)
         e.add_field(name="Event", value=event_method)
         e.description = f"```py\n{traceback.format_exc()}\n```"
         e.timestamp = datetime.utcnow()
@@ -147,7 +147,7 @@ class OakBot(commands.Bot):
             pass
 
     async def on_ready(self):
-        activity = discord.Game(" with fertilizer")
+        activity = nextcord.Game(" with fertilizer")
         await bot.change_presence(activity=activity)
         self.coc.add_clan_updates("#CVCJR89")
         clan = await self.coc.get_clan("#CVCJR89")

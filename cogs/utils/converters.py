@@ -3,7 +3,7 @@ import coc
 
 from datetime import datetime
 from cogs.utils.constants import clans
-from discord.ext import commands
+from nextcord.ext import commands
 
 tag_validator = re.compile("^#?[PLYQGRJCUV0289]+$")
 

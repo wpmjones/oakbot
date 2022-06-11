@@ -1,8 +1,6 @@
 import coc
 
 from datetime import datetime, timedelta
-from cogs.utils.db import get_link_token
-from config import settings
 
 
 class Timestamp:
@@ -112,95 +110,6 @@ class WarData(coc.ClanWar):
                 return attacks_left
         else:
             raise ValueError(f"There are only {self.team_size} bases in this war.")
-
-    async def get_discord_id(self, tag):
-        """Get discord ID from player tag
-        Returns single Discord ID because a player tag will only ever have one Discord ID"""
-        token = get_link_token()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        async with self.bot.session as session:
-            base_url = "https://api.amazingspinach.com/links/"
-            url = base_url + tag
-            async with session.get(url, headers=headers) as r:
-                if r.status < 300:
-                    data = await r.json()
-                else:
-                    raise ValueError(f"Links API Error: {r.status} when looking for {tag}. "
-                                     f"Please make sure they are properly linked.")
-        return data['discordId']
-
-    async def get_player_tag(self, discord_id):
-        """Get discord ID from player tag
-        Returns json from response because there can be multiple tags per Discord ID"""
-        token = get_link_token()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        async with self.bot.session as session:
-            base_url = "https://api.amazingspinach.com/links/"
-            url = base_url + discord_id
-            async with session.get(url, headers=headers) as r:
-                if r.status < 300:
-                    data = await r.json()
-                else:
-                    raise ValueError(f"Links API Error: {r.status} when looking for {discord_id}. "
-                                     f"Please make sure they are properly linked.")
-        return data
-
-    async def get_base_owner(self, **kwargs):
-        """Can pass in discord_id, player_tag, or map_ position
-        All others will be ignored
-        """
-        base = {}
-        if "discord_id" in kwargs.keys():
-            base['discord_id'] = kwargs.get('discord_id')
-            api_response = await self.get_player_tag(base['discord_id'])
-            if api_response:
-                if len(api_response) == 1:
-                    base['player_tag'] = api_response['playerTag']
-                    for member in self.clan.members:
-                        if member.tag == base['player_tag']:
-                            base['name'] = member.name
-                            base['map_position'] = member.map_position
-                    else:
-                        raise ValueError("This player is not in the current war.")
-                else:
-                    bases = []
-                    for row in api_response:
-                        base['player_tag'] = row['playerTag']
-                        for member in self.clan.members:
-                            if member.tag == base['player_tag']:
-                                base['name'] = member.name
-                                base['map_position'] = member.map_position
-                                bases.append(base)
-                    return bases
-            else:
-                # TODO change to elder channel or member status before going live
-                channel = self.bot.get_channel(settings['oak_channels']['test_chat'])
-                await channel.send(f"{kwargs.get('discord_id')} is missing from the links database. "
-                                   f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
-                raise ValueError(f"{kwargs.get('discord_id')} is missing from the links database. "
-                                 f"Please run `/war add PlayerTag {kwargs.get('discord_id')}`.")
-        elif "player_tag" in kwargs.keys():
-            base['tag'] = coc.utils.correct_tag(kwargs.get('player_tag'))
-            for member in self.clan.members:
-                if member.tag == base['tag']:
-                    base['name'] = member.name
-                    base['discord_id'] = await self.get_discord_id(member.tag)
-                    base['map_position'] = member.map_position
-                    break
-            else:
-                raise ValueError("This player is not in the current war.")
-        elif "map_position" in kwargs.keys():
-            base['map_position'] = kwargs.get('map_position')
-            for member in self.clan.members:
-                if member.map_position == base['map_position']:
-                    base['name'] = member.name
-                    base['tag'] = member.tag
-                    base['discord_id'] = await self.get_discord_id(member.tag)
-                    break
-            else:
-                raise ValueError("This player is not in the current war.")
-        else:
-            raise ValueError("No valid keyword argument provided for this function.")
 
     async def add(self, caller, target):
         """Add new call to database"""

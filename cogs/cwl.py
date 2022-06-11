@@ -1,7 +1,7 @@
 import coc
-import discord
+import nextcord
 
-from discord.ext import commands
+from nextcord.ext import commands
 from cogs.war import to_time
 from cogs.utils.constants import clans
 from datetime import datetime
@@ -67,7 +67,7 @@ class Cwl(commands.Cog):
         if not war.is_cwl:
             return await ctx.send(f"It appears that {war.clan} is not currently involved in CWL.  Please use "
                                   f"`/war` commands instead.")
-        embed = discord.Embed(title="CWL Status", color=discord.Color.dark_blue())
+        embed = nextcord.Embed(title="CWL Status", color=nextcord.Color.dark_blue())
         blank = emojis['other']['gap']
         group = await self.bot.coc.get_league_group(clan_tag)
         end_content = ""

@@ -1,7 +1,7 @@
 import asyncio
-import discord
+import nextcord
 
-from discord.ext import commands
+from nextcord.ext import commands
 from datetime import datetime
 
 
@@ -21,7 +21,7 @@ class Downtime(commands.Cog):
                                            f"in {upcoming.seconds // 3600} hours "
                                            f"and {(upcoming.seconds // 60) % 60} minutes. "
                                            f"The nap should last about 30 minutes.")
-                    except discord.Forbidden:
+                    except nextcord.Forbidden:
                         print(f"Didn't have perms for {channel.name} on {channel.guild.name}.")
             print("done")
             await asyncio.sleep(30*60)

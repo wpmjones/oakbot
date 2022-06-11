@@ -1,9 +1,9 @@
 import coc
-import discord
+import nextcord
 import gspread
 import re
 
-from discord.ext import commands
+from nextcord.ext import commands
 from cogs.utils.constants import clans
 from cogs.utils.converters import PlayerConverter
 from datetime import datetime, timedelta
@@ -651,7 +651,7 @@ class War(commands.Cog):
             await ctx.send(f"{links_resp}\n{oak_resp}")
 
     @war.command(name="add", hidden=True)
-    async def war_add(self, ctx, player: PlayerConverter = None, member: discord.Member = None):
+    async def war_add(self, ctx, player: PlayerConverter = None, member: nextcord.Member = None):
         """Add player to links discord API so we can connect tags to Discord IDs"""
         if not self.is_elder(ctx.author):
             return await ctx.send("You are not authorized to use this command.")
@@ -720,7 +720,7 @@ class War(commands.Cog):
             else:
                 # Maybe maintenance pushed the end of war back some
                 time_calc = f"Free for all! We're in overtime! War ends soon!"
-        embed = discord.Embed(title="War Status", color=discord.Color.dark_blue())
+        embed = nextcord.Embed(title="War Status", color=nextcord.Color.dark_blue())
         embed.set_thumbnail(url="https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/160/microsoft/"
                                 "106/crossed-swords_2694.png")
         embed.add_field(name=f"{war.clan.name} vs {war.opponent.name}", value=time_calc, inline=False)
