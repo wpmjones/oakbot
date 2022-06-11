@@ -140,6 +140,8 @@ class Background(commands.Cog):
                         continue
                 discord_member = self.guild.get_member(discord_id)
                 if quercus_role in discord_member.roles:
+                    if isinstance(quercus_role, str):
+                        quercus_role = self.guild.get_role(settings['oak_roles']['quercus'])
                     await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is back "
                                                                     "in Oak. You're welcome!")
             except ValueError:

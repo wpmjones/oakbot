@@ -21,6 +21,9 @@ initial_extensions = ["cogs.general",
                       "cogs.admin",
                       ]
 
+intents = nextcord.Intents.default()
+intents.members = True
+
 if enviro == "LIVE":
     token = settings['discord']['oakbot_token']
     prefix = "."
@@ -34,6 +37,7 @@ if enviro == "LIVE":
     initial_extensions.append("cogs.war")
     coc_email = settings['supercell']['user']
     coc_pass = settings['supercell']['pass']
+    intents.message_content = True
 elif enviro == "home":
     token = settings['discord']['test_token']
     prefix = ">"
@@ -62,9 +66,6 @@ coc_client = coc.login(coc_email,
 
 links_client = discordlinks.login(settings['links']['user'],
                                   settings['links']['pass'])
-
-intents = nextcord.Intents.default()
-intents.members = True
 
 
 class OakBot(commands.Bot):
