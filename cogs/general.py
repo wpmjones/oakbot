@@ -187,6 +187,7 @@ class General(commands.Cog):
 
     @nextcord.slash_command(name="avatar", guild_ids=[settings['discord']['oakguild_id']])
     async def avatar(self, interaction: Interaction, user: nextcord.Member):
+        """Responds with an enlarged version of the user's avatar."""
         embed = nextcord.Embed(color=nextcord.Color.blue())
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
         embed.set_image(url=user.avatar.url)
@@ -237,7 +238,7 @@ class General(commands.Cog):
 
     @nextcord.slash_command(name="sm", guild_ids=[settings['discord']['oakguild_id']])
     async def siege(self, interaction: Interaction, *, siege_req):
-        """- For requesting siege machines
+        """For requesting siege machine donations
 
         Options:
          - ww, wall wrecker
@@ -252,6 +253,7 @@ class General(commands.Cog):
          /siege blimp
          /siege Stone Slammer
          /siege barracks
+         /siege ff
          """
         user_id = interaction.user.id
         channel = interaction.channel
