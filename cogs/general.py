@@ -185,37 +185,30 @@ class General(commands.Cog):
                               f"Request complete: /player {player.name}")
         await ctx.send(embed=embed)
 
-    @commands.command(name="avatar", hidden=True)
-    async def avatar(self, ctx, user: nextcord.Member):
-        # convert discord mention to user id only
-        guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
+    @nextcord.slash_command(name="avatar", guild_ids=[settings['discord']['oakguild_id']])
+    async def avatar(self, interaction: Interaction, user: nextcord.Member):
         embed = nextcord.Embed(color=nextcord.Color.blue())
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
         embed.set_image(url=user.avatar_url_as(size=128))
-        await ctx.send(embed=embed)
-        self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                              f"Request complete: /avatar {user.display_name}")
-
-    @avatar.error
-    async def avatar_error(self, ctx, error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("You may think so, but that's not a valid Discord user. Care to try again?")
+        await interaction.response.send_message(embed=embed)
+        self.bot.logger.debug(f"{interaction.application_command} by {interaction.user.display_name} in "
+                              f"{interaction.channel}")
 
     @commands.command(name="help", hidden=True)
     async def help(self, ctx, command: str = "all"):
         """ Welcome to The Arborist"""
         desc = """All commands must begin with a slash.
 
-        You can type /help <command> to display only the help for that command."""
+        You can type .help <command> to display only the help for that command."""
         # ignore requests for help with the war command
         if command == "war":
             return
         # respond if help is requested for a command that does not exist
         if command not in ["all", "siege", "player", "elder"]:
             self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Problem: /help {command} - command does not exist")
+                                    f"Problem: .help {command} - command does not exist")
             await ctx.send(f"{emojis['other']['redx']} You have provided a command that does not exist. "
-                           f"Perhaps try /help to see all commands.")
+                           f"Perhaps try .help to see all commands.")
             return
         embed = nextcord.Embed(title="The Arborist by Reddit Oak", description=desc, color=color_pick(15, 250, 15))
         embed.add_field(name="Commands:", value="-----------", inline=True)
@@ -225,26 +218,22 @@ class General(commands.Cog):
                      "\n**blimp**: Battle Blimp"
                      "\n**slammer**: Stone Slammer"
                      "\n**barracks**: Siege Barracks")
-            embed.add_field(name="/siege <siege type>", value=siege, inline=False)
+            embed.add_field(name=".siege <siege type>", value=siege, inline=False)
         if command in ["all", "player"]:
             player = ("Display vital statistics on the requested player. This includes information "
                       "on in game stats as well as stats while in Reddit Oak.")
-            embed.add_field(name="/player <in game name>", value=player, inline=False)
+            embed.add_field(name=".player <in game name>", value=player, inline=False)
         if command in ["all", "avatar"]:
             avatar = "Provides an enlarged version of the specified player's avatar."
             embed.add_field(name="/avatar <Discord Mention or ID>", value=avatar, inline=False)
         if command == "elder":
             elder = "To display help for elder commands, please type /elder."
-            embed.add_field(name="/elder", value=elder, inline=False)
+            embed.add_field(name=".elder", value=elder, inline=False)
         embed.set_footer(icon_url="https://openclipart.org/image/300px/svg_to_png/122449/1298569779.png",
                          text="The Arborist proudly maintained by TubaKid.")
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                               f"Request complete: /help {command}")
         await ctx.send(embed=embed)
-
-    @commands.command(name="sheet")
-    async def sheet(self, ctx):
-        await ctx.send(settings['google']['oak_sheet'])
 
     @nextcord.slash_command(name="sm", guild_ids=[settings['discord']['oakguild_id']])
     async def siege(self, interaction: Interaction, *, siege_req):
