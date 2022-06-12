@@ -189,7 +189,7 @@ class General(commands.Cog):
     async def avatar(self, interaction: Interaction, user: nextcord.Member):
         embed = nextcord.Embed(color=nextcord.Color.blue())
         embed.add_field(name=f"{user.name}#{user.discriminator}", value=user.display_name)
-        embed.set_image(url=user.avatar_url_as(size=128))
+        embed.set_image(url=user.avatar.url)
         await interaction.response.send_message(embed=embed)
         self.bot.logger.debug(f"{interaction.application_command} by {interaction.user.display_name} in "
                               f"{interaction.channel}")

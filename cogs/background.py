@@ -127,7 +127,7 @@ class Background(commands.Cog):
                 discord_id = await self.bot.links.get_link(member.tag)
                 if not discord_id:
                     gc = gspread.service_account(filename="service_account.json")
-                    ot = gc.open("Oak Table")
+                    ot = gc.open_by_key(settings['google']['oak_table_id'])
                     sh = ot.worksheet("Current Members")
                     name_cell = sh.find(member.name)
                     if name_cell.row > 55:
