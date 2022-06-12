@@ -180,7 +180,7 @@ class General(commands.Cog):
         if builder_hero != "":
             embed.add_field(name="Hero", value=builder_hero, inline=False)
         embed.set_footer(icon_url=player.clan.badge.url,
-                         text=f"Member of Reddit Oak since {join_date.strftime('%d-%b-%y')}")
+                         text=f"Member of Reddit Oak since {join_date}")
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                               f"Request complete: /player {player.name}")
         await ctx.send(embed=embed)
