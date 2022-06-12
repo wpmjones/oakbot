@@ -671,15 +671,15 @@ class War(commands.Cog):
                 await ctx.send("Successfully updated Oak Table.")
         # Add link to Discord Links API
         result = await self.bot.links.add_link(player.tag, member.id)
-        self.bot.logger.info(f"{type(result)}: {result}")
         await ctx.send(f"{player.name} ({player.tag}) has been successfully linked to {member.display_name}.")
         # Add TH role
         th = player.town_hall
-        guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
-        role_id = settings["oak_roles"][f"TH{th}"]
-        th_role = guild.get_role(role_id=role_id)
-        await member.add_roles(th_role, reason="Auto add TH role from /war add command")
-        await ctx.send(f"Successfully added the {th_role.name} role to {member.display_name}.")
+        if th > 6:
+            guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
+            role_id = settings["oak_roles"][f"TH{th}"]
+            th_role = guild.get_role(role_id=role_id)
+            await member.add_roles(th_role, reason="Auto add TH role from /war add command")
+            await ctx.send(f"Successfully added the {th_role.name} role to {member.display_name}.")
 
     @war.command(name="status", aliases=["info"])
     async def war_status(self, ctx):
