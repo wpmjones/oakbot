@@ -3,11 +3,17 @@ import gspread
 
 from nextcord import ui, Interaction
 from nextcord.ext import commands
-from cogs.utils.db import Sql
 from cogs.utils.constants import leagues_to_emoji
 from cogs.utils.converters import PlayerConverter
 from coc import enums
 from config import settings, emojis, color_pick
+
+
+# Connect to Google Sheets using gspread
+gc = gspread.service_account(filename="service_account.json")
+spreadsheet = gc.open_by_key(settings['google']['oak_table_id'])
+curr_member_range = "A3:D52"
+new_member_range = "A57:D61"
 
 
 class Button(ui.Button):
@@ -41,7 +47,7 @@ class General(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         """Auto-responder"""
-        if message.author.name in ["The Arborist", "Oak WarBot", "Test Bot"]:
+        if message.author.name in ["The Arborist", "Test Bot"]:
             return
         if "funnel" in message.content:
             return await message.channel.send("Learn how to funnel here - https://youtu.be/0rWN9FLMGT4 - "
@@ -74,28 +80,14 @@ class General(commands.Cog):
                                     f"Problem: No valid player name or tag was provided.")
             return await ctx.send(f"{emojis['other']['redx']} You must provide a valid in-game name or tag for this "
                                   f"command. Try `/player TubaKid`")
-        # pull non-in-game stats from db
-        with Sql() as cursor:
-            sql = (f"SELECT tag, numWars, avgStars, warStats, joinDate, slackId "
-                   f"FROM coc_oak_players "
-                   f"WHERE tag = ?")
-            cursor.execute(sql, player.tag[1:])
-            oak_stats = cursor.fetchone()
-        try:
-            if not oak_stats:
-                self.bot.logger.warning(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                        f"Problem: {player.name} not found in SQL database")
-                return await ctx.send(f"{emojis['other']['redx']} The player you provided was not found in the "
-                                      f"database. Please try again.")
-        except:
-            self.bot.logger.error(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                  f"Unknown error has occurred")
-            return await ctx.send(f"{emojis['other']['redx']} Something has gone horribly wrong. "
-                                  f"<@251150854571163648> I was trying to look up {player.name} "
-                                  f"but the world conspired against me.")
+        # Get join date from Oak Table
+        sheet = spreadsheet.worksheet("Current Members")
+        cell = sheet.find(player.tag)
+        if cell:
+            join_date = sheet.cell(cell.row, 4).value
+        else:
+            join_date = "unknown"
         # retrieve player info from coc.py
-        player_tag = f"#{oak_stats.tag}"
-        player = await self.bot.coc.get_player(player_tag)
         troop_levels = builder_levels = spell_levels = hero_levels = hero_pets_levels = builder_hero = \
             sm_levels = super_troop_levels = ""
         sm_troops = enums.SIEGE_MACHINE_ORDER
@@ -165,9 +157,6 @@ class General(commands.Cog):
         embed.add_field(name="War Stars", value=player.war_stars, inline=True)
         embed.add_field(name="Attack Wins", value=player.attack_wins, inline=True)
         embed.add_field(name="Defense Wins", value=player.defense_wins, inline=True)
-        embed.add_field(name="Wars in Oak", value=oak_stats.numWars, inline=True)
-        embed.add_field(name="Avg. Stars per War", value=str(round(oak_stats.avgStars, 2)), inline=True)
-        embed.add_field(name="This Season", value=oak_stats.warStats, inline=False)
         war_preference = "Opted In" if player.war_opted_in else "Opted Out"
         embed.add_field(name="War Preference", value=war_preference, inline=False)
         embed.add_field(name="Troop Levels", value=troop_levels, inline=False)
@@ -190,7 +179,7 @@ class General(commands.Cog):
         if builder_hero != "":
             embed.add_field(name="Hero", value=builder_hero, inline=False)
         embed.set_footer(icon_url=player.clan.badge.url,
-                         text=f"Member of Reddit Oak since {oak_stats.joinDate.strftime('%e %B, %Y')}")
+                         text=f"Member of Reddit Oak since {join_date.strftime('%d-%b-%y')}")
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
                               f"Request complete: /player {player.name}")
         await ctx.send(embed=embed)

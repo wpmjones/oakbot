@@ -38,8 +38,8 @@ class Background(commands.Cog):
             try:
                 clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
                 sql1 = ("INSERT INTO coc_oak (tag, playerName, XPLevel, trophies, donations, donReceived, league, "
-                        "leagueIcon, thLevel, warStars, attackWins, defenseWins, bestTrophies, vsTrophies, bestVsTrophies, "
-                        "versusBattleWins, builderHall, timestamp) "
+                        "leagueIcon, thLevel, warStars, attackWins, defenseWins, bestTrophies, vsTrophies, "
+                        "bestVsTrophies, versusBattleWins, builderHall, timestamp) "
                         "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
                 sql2 = ("UPDATE coc_oak "
                         "SET barbKing = ?, archQueen = ?, grandWarden = ?, royalChamp = ?, battleMachine = ?, "
