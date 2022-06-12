@@ -103,7 +103,7 @@ class Background(commands.Cog):
                 self.bot.logger.info(f"Couldn't find Discord member: {discord_id}: {type(discord_id)}")
                 continue
             if quercus_role not in discord_member.roles:
-                await discord_member.add_roles(quercus_role, "Auto-add in background. You're welcome!")
+                await discord_member.add_roles(quercus_role.id, "Auto-add in background. You're welcome!")
                 self.bot.logger.info(f"Added Quercus role to {discord_member.display_name}.")
         if not_in_links:
             channel = self.guild.get_channel(settings['oak_channels']['test_chat'])
@@ -144,7 +144,7 @@ class Background(commands.Cog):
                     self.bot.logger.info(type(quercus_role))
                     await discord_member.remove_roles(quercus_role.id, "Auto-remove in background because player is "
                                                                        "back in Oak. You're welcome!")
-            except ValueError:
+            except (ValueError, AttributeError):
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 line_num = exc_tb.tb_lineno
                 self.bot.logger.info(f"check_oak: {line_num}: Value error dealing with {member.name} ({member.tag})")
