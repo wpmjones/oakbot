@@ -88,6 +88,7 @@ class General(commands.Cog):
         else:
             join_date = "unknown"
         # retrieve player info from coc.py
+        player = await self.bot.coc.get_player(player.tag)
         troop_levels = builder_levels = spell_levels = hero_levels = hero_pets_levels = builder_hero = \
             sm_levels = super_troop_levels = ""
         sm_troops = enums.SIEGE_MACHINE_ORDER
