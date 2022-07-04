@@ -677,7 +677,7 @@ class War(commands.Cog):
         if th > 6:
             guild = self.bot.get_guild(settings["discord"]["oakguild_id"])
             role_id = settings["oak_roles"][f"TH{th}"]
-            th_role = guild.get_role(role_id=role_id)
+            th_role = guild.get_role(role_id)
             await member.add_roles(th_role, reason="Auto add TH role from /war add command")
             await ctx.send(f"Successfully added the {th_role.name} role to {member.display_name}.")
 
