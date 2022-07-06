@@ -132,18 +132,21 @@ class Background(commands.Cog):
                     name_cell = sh.find(member.name)
                     if name_cell.row > 55:
                         self.bot.logger.debug(f"Skipping {member.name} ({member.tag}) since it appears they are new.")
-                        not_in_links.append(f"{member.name} ({member.tag})")
                         continue
                     discord_id = sh.cell(name_cell.row, 9).value
                     if not discord_id:
                         # ID missing from Oak Table
+                        not_in_links.append(f"{member.name} ({member.tag})")
                         continue
+                    else:
+                        # discord id is in Oak Table, but not links. Let's add it to links!
+                        await self.bot.links.add_link(member.tag, discord_id)
                 discord_member = self.guild.get_member(discord_id)
                 if quercus_role in discord_member.roles:
                     self.bot.logger.info(quercus_role)
                     self.bot.logger.info(type(quercus_role))
                     await discord_member.remove_roles(quercus_role, "Auto-remove in background because player is "
-                                                                       "back in Oak. You're welcome!")
+                                                                    "back in Oak. You're welcome!")
             except (ValueError, AttributeError):
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 line_num = exc_tb.tb_lineno
