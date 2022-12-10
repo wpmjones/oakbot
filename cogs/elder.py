@@ -277,7 +277,7 @@ class Elder(commands.Cog):
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
     @nextcord.slash_command(name="stats",
-                            guild_ids=[settings['discord']['oakguild_id'], settings['discord']['logsguild_id']])
+                            guild_ids=[settings['discord']['oakguild_id'], settings['discord']['botlogguild_id']])
     async def stats(self, interaction: Interaction):
         """ Respond with those players not yet meeting attack/donation rules """
         guild = self.bot.get_guild(settings['discord']['oakguild_id'])
@@ -286,7 +286,7 @@ class Elder(commands.Cog):
         leader = guild.get_role(settings['oak_roles']['leader'])
         admin_roles = [elder, co, leader]
         admin = False
-        if interaction.guild.id == settings['discord']['logsguild_id']:
+        if interaction.guild.id == settings['discord']['botlogguild_id']:
             admin = True
         else:
             for role in interaction.user.roles:
