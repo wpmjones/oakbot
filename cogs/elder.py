@@ -1,11 +1,12 @@
 import nextcord
 import gspread
-import season
 
+from nextcord import ui, Interaction
 from nextcord.ext import commands
 from cogs.utils.db import Sql
 from cogs.utils.checks import is_elder
 from cogs.utils.constants import clans
+from coc import utils
 from datetime import datetime, timedelta
 from config import settings, color_pick, emojis
 
@@ -73,43 +74,35 @@ class Elder(commands.Cog):
         if ctx.author.is_on_mobile():
             await ctx.send("https://giphy.com/gifs/quality-mods-jif-6lt4syTAmvzAk")
 
-    @commands.command(name="role", hidden=True)
-    @commands.guild_only()
-    async def role(self, ctx, user: nextcord.Member, role_name):
+    @nextcord.slash_command(name="role", guild_ids=[settings['discord']['oakguild_id']])
+    async def role(self, interaction: Interaction, user: nextcord.Member, role_name):
         """Command to add/remove roles from users"""
-        if authorized(ctx.author.roles):
-            # get role ID for specified role
-            guild = ctx.bot.get_guild(settings['discord']['oakguild_id'])
-            if role_name.lower() not in settings['oak_roles']:
-                await ctx.send(emojis['other']['redx'] + (" I'm thinking you're going to have to provide "
-                                                          "a role that is actually used in this server.\n"
-                                                          "Try Guest, Member, Elder, or Co-Leader."))
-                return
-            role_obj = guild.get_role(int(settings['oak_roles'][role_name.lower()]))
-            flag = True
-            # check to see if the user already has the role
-            for role in user.roles:
-                if role.name.lower() == role_name.lower():
-                    flag = False
-            if flag:
-                await user.add_roles(role_obj, reason=f"Arborist command issued by {ctx.author}")
-                content = f":white_check_mark: **Added** {role_name.title()} role for {user.display_name}"
-                if role_name.lower() == "member":
-                    content += "\nIs it also time to do `/war add`?"
-                await ctx.send(content)
-            else:
-                await user.remove_roles(role_obj, reason=f"Arborist command issued by {ctx.author}")
-                await ctx.send(f":white_check_mark: **Removed** {role_name.title()} role for {user.display_name}")
+        if not authorized(interaction.user.roles):
+            return await interaction.response.send_message("You are not authorized to use this command",
+                                                           ephemeral=True)
+        # get role ID for specified role
+        if role_name.lower() not in settings['oak_roles']:
+            return await interaction.response.send_message(emojis['other']['redx'] +
+                                                           (" I'm thinking you're going to have to provide "
+                                                            "a role that is actually used in this server.\n"
+                                                            "Try Guest, Member, Elder, or Co-Leader."))
+        await interaction.response.defer(ephemeral=True)
+        role_obj = interaction.guild.get_role(int(settings['oak_roles'][role_name.lower()]))
+        flag = True
+        # check to see if the user already has the role
+        for role in user.roles:
+            if role.name.lower() == role_name.lower():
+                flag = False
+        if flag:
+            await user.add_roles(role_obj, reason=f"Arborist command issued by {interaction.user}")
+            content = f":white_check_mark: **Added** {role_name.title()} role for {user.display_name}"
+            if role_name.lower() == "member":
+                content += "\nIs it also time to do `/war add`?"
+            await interaction.followup.send(content, ephemeral=True)
         else:
-            self.bot.logger.warning(f"User not authorized - "
-                                    f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                                    f"Request: {role_name} for {user.discplay_name}")
-            await ctx.send("Wait a minute punk! You aren't allowed to use that command")
-
-    @role.error
-    async def role_error(self, ctx, error):
-        if isinstance(error, commands.BadArgument):
-            await ctx.send("That is not a valid Discord user. Please try again.")
+            await user.remove_roles(role_obj, reason=f"Arborist command issued by {interaction.user}")
+            await interaction.followup.send(f":white_check_mark: **Removed** {role_name.title()} role for "
+                                            f"{user.display_name}")
 
     @commands.command(name="kick", aliases=["ban"], hidden=True)
     @is_elder()
@@ -283,22 +276,36 @@ class Elder(commands.Cog):
                                     f"Request: Warning for {player} for {warning}")
             await ctx.send("Wait a minute punk! You aren't allowed to use that command")
 
-    @commands.command(name="stats", aliases=["stat", "check", "donations"], hidden=True)
-    @is_elder()
-    async def stats(self, ctx):
+    @nextcord.slash_command(name="stats",
+                            guild_ids=[settings['discord']['oakguild_id'], settings['discord']['logsguild_id']])
+    async def stats(self, interaction: Interaction):
         """ Respond with those players not yet meeting attack/donation rules """
-        msg = await ctx.send("Retrieving statistics. One moment please.")
-        percent = season.get_days_since() / season.get_season_length()
+        guild = self.bot.get_guild(settings['discord']['oakguild_id'])
+        elder = guild.get_role(settings['oak_roles']['elder'])
+        co = guild.get_role(settings['oak_roles']['co-leader'])
+        leader = guild.get_role(settings['oak_roles']['leader'])
+        admin_roles = [elder, co, leader]
+        admin = False
+        if interaction.guild.id == settings['discord']['logsguild_id']:
+            admin = True
+        else:
+            for role in interaction.user.roles:
+                if role in admin_roles:
+                    admin = True
+        if not admin:
+            return await interaction.response.send_message("This command is reserved for admins only.")
+        await interaction.response.defer(ephemeral=True)
+        days_since_start = datetime.utcnow() - utils.get_season_start()
+        season_length = utils.get_season_end() - utils.get_season_start()
+        percent = days_since_start / season_length
         attacks_needed = int(20 * percent)
         donates_needed = int(600 * percent)
         clan = await self.bot.coc.get_clan("#CVCJR89")
-        self.bot.logger.debug("Clan retrieved")
-        warn_text = (f"**We are {season.get_days_since()} days into a {season.get_season_length()} day season.\n"
+        warn_text = (f"**We are {days_since_start.days} days into a {season_length.days} day season.\n"
                      f"These statistics are based on what players should have this far into the season.**\n\n"
                      f"*TH9 or below*\n")
         low_text = high_text = ""
         async for player in clan.get_detailed_members():
-            self.bot.logger.debug(f"Evaluating {player.name}")
             if player.town_hall <= 9 and player.attack_wins < attacks_needed:
                 low_text += (f"{player.name}{th_superscript(player.town_hall)} "
                              f"is below {attacks_needed} attack wins ({player.attack_wins}).\n")
@@ -308,7 +315,12 @@ class Elder(commands.Cog):
         warn_text += low_text
         warn_text += "\n\n*TH10 or above*\n"
         warn_text += high_text
-        await msg.edit(content=warn_text)
+        if (interaction.channel.id == settings['oak_channels']['elder_chat'] or
+                interaction.channel.id == settings['oak_channels']['member_status_chat']):
+            ephemeral = False
+        else:
+            ephemeral = True
+        await interaction.followup.send(content=warn_text, ephemeral=ephemeral)
 
     @commands.command(name="unconfirmed", aliases=["un"], hidden=True)
     @is_elder()

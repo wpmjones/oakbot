@@ -23,6 +23,7 @@ initial_extensions = ["cogs.general",
 
 intents = nextcord.Intents.default()
 intents.members = True
+intents.message_content = True
 
 if enviro == "LIVE":
     token = settings['discord']['oakbot_token']
@@ -37,7 +38,6 @@ if enviro == "LIVE":
     initial_extensions.append("cogs.war")
     coc_email = settings['supercell']['user']
     coc_pass = settings['supercell']['pass']
-    intents.message_content = True
 elif enviro == "home":
     token = settings['discord']['test_token']
     prefix = ">"
