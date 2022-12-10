@@ -1,7 +1,8 @@
+import coc
 import nextcord
 import gspread
 
-from nextcord import ui, Interaction
+from nextcord import ui, Interaction, SlashOption
 from nextcord.ext import commands
 from cogs.utils.constants import leagues_to_emoji
 from cogs.utils.converters import PlayerConverter
@@ -198,7 +199,7 @@ class General(commands.Cog):
     @commands.command(name="help", hidden=True)
     async def help(self, ctx, command: str = "all"):
         """ Welcome to The Arborist"""
-        desc = """All commands must begin with a slash.
+        desc = """All commands must begin with a period.
 
         You can type .help <command> to display only the help for that command."""
         # ignore requests for help with the war command
@@ -213,27 +214,14 @@ class General(commands.Cog):
             return
         embed = nextcord.Embed(title="The Arborist by Reddit Oak", description=desc, color=color_pick(15, 250, 15))
         embed.add_field(name="Commands:", value="-----------", inline=True)
-        if command in ["all", "siege"]:
-            siege = ("Posts request for the specified siege machine in Discord and tags those players that can donate."
-                     "\n**ground**: Wall Wrecker"
-                     "\n**blimp**: Battle Blimp"
-                     "\n**slammer**: Stone Slammer"
-                     "\n**barracks**: Siege Barracks")
-            embed.add_field(name=".siege <siege type>", value=siege, inline=False)
         if command in ["all", "player"]:
             player = ("Display vital statistics on the requested player. This includes information "
                       "on in game stats as well as stats while in Reddit Oak.")
             embed.add_field(name=".player <in game name>", value=player, inline=False)
-        if command in ["all", "avatar"]:
-            avatar = "Provides an enlarged version of the specified player's avatar."
-            embed.add_field(name="/avatar <Discord Mention or ID>", value=avatar, inline=False)
-        if command == "elder":
-            elder = "To display help for elder commands, please type /elder."
-            embed.add_field(name=".elder", value=elder, inline=False)
         embed.set_footer(icon_url="https://openclipart.org/image/300px/svg_to_png/122449/1298569779.png",
                          text="The Arborist proudly maintained by TubaKid.")
         self.bot.logger.debug(f"{ctx.command} by {ctx.author} in {ctx.channel} | "
-                              f"Request complete: /help {command}")
+                              f"Request complete: .help {command}")
         await ctx.send(embed=embed)
 
     @nextcord.slash_command(name="sm", guild_ids=[settings['discord']['oakguild_id']])
@@ -346,9 +334,45 @@ class General(commands.Cog):
         await channel.send(embed=embed)
         await channel.send(content)
 
-    @commands.command(name="nickname")
-    async def nickname(self, ctx):
-        await ctx.send("https://www.techuntold.com/change-nickname-discord/")
+    @nextcord.slash_command(name="welcome",
+                            description="Enter your player tag to gain access to the Discord server.",
+                            guild_ids=[settings['discord']['oakguild_id'], settings['discord']['botlogguild_id']])
+    async def welcome(self,
+                      interaction: Interaction,
+                      tag: str = SlashOption(description="Clash of Clans Player Tag",
+                                             required=True)):
+        member_role = interaction.guild.get_role(settings['oak_roles']['member'])
+        for role in interaction.user.roles:
+            if role == member_role:
+                return await interaction.response.send_message("You already have the Member role.", ephemeral=True)
+        try:
+            player = await self.bot.coc.get_player(tag)
+        except coc.NotFound:
+            return await interaction.response.send_message("Bad player tag. Please try again.")
+        if player.clan.tag != "#CVCJR89":
+            return await interaction.response.send_message("That player is not currently in Reddit Oak.")
+        await interaction.response.defer()
+        # check to see if player tag is already linked to the Discord ID
+        link_tags = await self.bot.links.get_linked_players(interaction.user.id)
+        self.bot.logger.info(link_tags)
+        match = False
+        for link in link_tags:
+            if link == player.tag:
+                match = True
+        if not match:
+            # see if player tag is linked to a different Discord ID
+            discord_id = await self.bot.links.get_link(player.tag)
+            if discord_id:
+                return await interaction.followup.send(f"Your player tag is linked to a different Discord ID. "
+                                                       f"Our admin team will need to make adjustments.\n"
+                                                       f"<@&{settings['oak_roles']['elder']}> "
+                                                       f"<@&{settings['oak_roles']['co-leader']}>")
+        if not match:
+            await self.bot.links.add_link(player.tag, interaction.user.id)
+        await interaction.user.add_roles(member_role)
+        await interaction.user.edit(nick=player.name)
+        town_hall_role = interaction.guild.get_role(settings['oak_roles'][f"TH{player.town_hall}"])
+        await interaction.user.add_roles(town_hall_role)
 
     @commands.command(name="invite")
     async def invite(self, ctx):

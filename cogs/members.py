@@ -30,11 +30,11 @@ class MembersCog(commands.Cog):
                    "recently joined Reddit Oak, you must read our rules at https://www.reddit.com/r/coc_redditoak.  "
                    "There is a form at the end that you will need to complete before we can give you more roles on "
                    "this server.\n\nMost of the good talking will happen in <#299901545888219137>.  Please keep an eye "
-                   "on <#530126055256883210> for important information.  <#362575004589752321> and "
-                   "<#529404677440274472> are there for tracking purposes.  And <#529406479921446932> is available "
+                   "on <#530126055256883210> for important information.  "
+                   "<#529404677440274472> is there for tracking purposes.  And <#529406479921446932> is available "
                    "for all your NSFW needs.  (Don't let it go too far.)\n\nIf you haven't already, we highly "
                    "recommend that you also join the Reddit Clan System Discord server!  "
-                   "https://discord.gg/X8U9XjD\n\nHave fun!")
+                   "<https://discord.gg/X8U9XjD>\n\nHave fun!")
         await channel.send(content)
 
     @commands.Cog.listener()

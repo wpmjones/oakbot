@@ -1,7 +1,7 @@
 import nextcord
 import gspread
 
-from nextcord import ui, Interaction
+from nextcord import Interaction, SlashOption
 from nextcord.ext import commands
 from cogs.utils.db import Sql
 from cogs.utils.checks import is_elder
@@ -68,11 +68,6 @@ class Elder(commands.Cog):
             embed.add_field(name="/optedin", value=optedin, inline=False)
         await ctx.send(embed=embed)
         self.bot.logger.info(f"{ctx.command} by {ctx.author} in {ctx.channel} | Request: {command}")
-
-    @commands.command(name="giphy", hidden=True)
-    async def giphy(self, ctx, gif_text):
-        if ctx.author.is_on_mobile():
-            await ctx.send("https://giphy.com/gifs/quality-mods-jif-6lt4syTAmvzAk")
 
     @nextcord.slash_command(name="role", guild_ids=[settings['discord']['oakguild_id']])
     async def role(self, interaction: Interaction, user: nextcord.Member, role_name):
@@ -372,17 +367,20 @@ class Elder(commands.Cog):
                 content = "No new members at this time."
             await ctx.send(content)
 
-    @commands.command(name="optedin", aliases=["opted", "opted_in", "war_preference"], hidden=True)
-    @is_elder()
-    async def opted_in(self, ctx, th_level: int = 0):
-        """List the war preference for players. Limited to town hall level if provided
-        /optedin
-        /optedin 13
-        /optedin 9"""
+    @nextcord.slash_command(name="optedin",
+                            guild_ids=[settings['discord']['oakguild_id'], settings['discord']['botlogguild_id']])
+    async def opted_in(self,
+                       interaction: Interaction,
+                       town_hall: int = SlashOption(description="Town Hall Level (optional)", required=False)):
+        """List the war preference for players. Limited to town hall level if provided"""
+        if not authorized(interaction.user.roles) and interaction.guild.id == settings['discord']['oakguild_id']:
+            return await interaction.response.send_message("You are not authorized to use this command",
+                                                           ephemeral=True)
+        await interaction.response.defer()
         clan = await self.bot.coc.get_clan(clans['Reddit Oak'])
         opted_in = "**Players Opted In:**\n"
         opted_out = "**Players Opted Out:**\n"
-        if th_level == 0:
+        if not town_hall:
             async for player in clan.get_detailed_members():
                 if player.war_opted_in:
                     opted_in += f"{player.name} (TH{player.town_hall})\n"
@@ -390,12 +388,12 @@ class Elder(commands.Cog):
                     opted_out += f"{player.name} (TH{player.town_hall})\n"
         else:
             async for player in clan.get_detailed_members():
-                if player.town_hall == th_level:
+                if player.town_hall == town_hall:
                     if player.war_opted_in:
                         opted_in += f"{player.name}\n"
                     else:
                         opted_out += f"{player.name}\n"
-        await ctx.send(f"{opted_in}\n{opted_out}")
+        await interaction.followup.send(f"{opted_in}\n{opted_out}")
 
 
 def authorized(user_roles):
