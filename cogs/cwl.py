@@ -45,7 +45,7 @@ class Cwl(commands.Cog):
     """War bot commands and setup"""
     def __init__(self, bot):
         self.bot = bot
-        self.bot.coc.add_events(self.on_roster_change)
+        # self.bot.coc.add_events(self.on_roster_change)
 
     def cog_unload(self):
         self.bot.coc.remove_events(self.on_roster_change)
